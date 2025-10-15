@@ -7,9 +7,13 @@ import { ConnectionDialog } from '@/components/ConnectionDialog';
 import { FileList } from '@/components/FileList';
 import { TransferQueue } from '@/components/TransferQueue';
 import { Breadcrumb } from '@/components/Breadcrumb';
+import { FileEditor } from '@/components/FileEditor';
+import { FileProperties } from '@/components/FileProperties';
+import { Settings } from '@/components/Settings';
 import { Button } from '@/components/ui/button';
-import { RefreshCw, Upload, FolderPlus, Trash2 } from 'lucide-react';
+import { RefreshCw, Upload, FolderPlus, Trash2, Settings as SettingsIcon } from 'lucide-react';
 import { FtpEntry, ConnectOptions } from '@/types/ftp';
+import { isEditableFile } from '@/lib/fileUtils';
 
 // Model Layer
 import { FtpRepositoryImpl } from '@/models/FtpRepository';
@@ -36,6 +40,8 @@ const Index = () => {
     refresh,
     deleteFile,
     createFolder,
+    readFile,
+    writeFile,
   } = useRemoteExplorer(ftpRepository, session);
   const {
     transfers,
@@ -51,6 +57,9 @@ const Index = () => {
   const [connectionDialogOpen, setConnectionDialogOpen] = useState(false);
   const [selectedFile, setSelectedFile] = useState<FtpEntry>();
   const [dragActive, setDragActive] = useState(false);
+  const [editingFile, setEditingFile] = useState<{ path: string; name: string; content: string } | null>(null);
+  const [propertiesFile, setPropertiesFile] = useState<FtpEntry | null>(null);
+  const [settingsOpen, setSettingsOpen] = useState(false);
 
   // View event handlers
   const handleConnect = useCallback(async (options: ConnectOptions) => {
@@ -116,6 +125,42 @@ const Index = () => {
     }
   }, [createFolder]);
 
+  const handleEditFile = useCallback(async (file: FtpEntry) => {
+    if (!isEditableFile(file.name)) return;
+    
+    try {
+      const content = await readFile(file.path);
+      setEditingFile({ path: file.path, name: file.name, content });
+    } catch (error) {
+      console.error('Failed to read file:', error);
+    }
+  }, [readFile]);
+
+  const handleSaveFile = useCallback(async (content: string) => {
+    if (!editingFile) return;
+    
+    await writeFile(editingFile.path, content);
+    setEditingFile(null);
+    refresh();
+  }, [editingFile, writeFile, refresh]);
+
+  const handleDownloadFile = useCallback((file: FtpEntry) => {
+    if (!file.isDirectory) {
+      startDownload(file.path, file.name);
+    }
+  }, [startDownload]);
+
+  const handleOpenFolder = useCallback((file: FtpEntry) => {
+    if (file.isDirectory) {
+      navigateToPath(file.path);
+      setSelectedFile(undefined);
+    }
+  }, [navigateToPath]);
+
+  const handleShowProperties = useCallback((file: FtpEntry) => {
+    setPropertiesFile(file);
+  }, []);
+
   return (
     <SidebarProvider defaultOpen={true}>
       <div className="flex h-screen w-full bg-background">
@@ -128,7 +173,7 @@ const Index = () => {
           {/* Header */}
           <div className="h-14 border-b border-border flex items-center justify-between px-4 bg-card">
             <div className="flex items-center gap-4">
-              <h1 className="text-lg font-semibold">Remote Explorer</h1>
+              <h1 className="text-lg font-semibold">WebFTP</h1>
               {session && (
                 <span className="text-sm text-muted-foreground">
                   Connected to {session.host}
@@ -137,6 +182,14 @@ const Index = () => {
             </div>
 
             <div className="flex items-center gap-2">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setSettingsOpen(true)}
+              >
+                <SettingsIcon className="h-4 w-4" />
+              </Button>
+              
               {session && (
                 <>
                   <Button
@@ -214,6 +267,15 @@ const Index = () => {
                     files={files}
                     onFileClick={handleFileClick}
                     onFileDoubleClick={handleFileDoubleClick}
+                    onDownload={handleDownloadFile}
+                    onDelete={(file) => {
+                      if (confirm(`Delete ${file.name}?`)) {
+                        deleteFile(file.path);
+                      }
+                    }}
+                    onEdit={handleEditFile}
+                    onOpen={handleOpenFolder}
+                    onProperties={handleShowProperties}
                     selectedFile={selectedFile}
                   />
                 ) : (
@@ -261,6 +323,26 @@ const Index = () => {
           onConnect={handleConnect}
           isConnecting={isConnecting}
         />
+
+        {/* File Editor */}
+        {editingFile && (
+          <FileEditor
+            filename={editingFile.name}
+            initialContent={editingFile.content}
+            onSave={handleSaveFile}
+            onClose={() => setEditingFile(null)}
+          />
+        )}
+
+        {/* File Properties */}
+        <FileProperties
+          file={propertiesFile}
+          open={!!propertiesFile}
+          onOpenChange={(open) => !open && setPropertiesFile(null)}
+        />
+
+        {/* Settings */}
+        {settingsOpen && <Settings onClose={() => setSettingsOpen(false)} />}
       </div>
     </SidebarProvider>
   );

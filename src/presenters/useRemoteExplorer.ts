@@ -111,6 +111,29 @@ export const useRemoteExplorer = (
     }
   }, [session, currentPath, ftpRepository, refresh]);
 
+  const readFile = useCallback(async (path: string): Promise<string> => {
+    if (!session) throw new Error('Not connected');
+    return await ftpRepository.readFile(session, path);
+  }, [session, ftpRepository]);
+
+  const writeFile = useCallback(async (path: string, content: string) => {
+    if (!session) return;
+
+    try {
+      await ftpRepository.writeFile(session, path, content);
+      toast({
+        title: 'File Saved',
+        description: 'File saved successfully',
+      });
+    } catch (error) {
+      toast({
+        title: 'Save Failed',
+        description: error instanceof Error ? error.message : 'Unknown error',
+        variant: 'destructive',
+      });
+    }
+  }, [session, ftpRepository]);
+
   // Load root directory when session changes
   useEffect(() => {
     if (session) {
@@ -132,5 +155,7 @@ export const useRemoteExplorer = (
     deleteFile,
     renameFile,
     createFolder,
+    readFile,
+    writeFile,
   };
 };

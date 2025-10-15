@@ -12,6 +12,8 @@ export interface FtpRepository {
   rename(session: Session, oldPath: string, newPath: string): Promise<void>;
   delete(session: Session, path: string): Promise<void>;
   mkdir(session: Session, path: string): Promise<void>;
+  readFile(session: Session, path: string): Promise<string>;
+  writeFile(session: Session, path: string, content: string): Promise<void>;
   disconnect(session: Session): Promise<void>;
 }
 
@@ -111,6 +113,19 @@ export class FtpRepositoryImpl implements FtpRepository {
 
   async mkdir(session: Session, path: string): Promise<void> {
     await new Promise(resolve => setTimeout(resolve, 300));
+  }
+
+  async readFile(session: Session, path: string): Promise<string> {
+    console.log('Reading file:', path);
+    // Mock implementation - return sample content
+    await new Promise(resolve => setTimeout(resolve, 500));
+    return `# Sample File Content\n\nThis is a mock file content for: ${path}\n\nIn a real implementation, this would fetch the actual file content from the FTP server.`;
+  }
+
+  async writeFile(session: Session, path: string, content: string): Promise<void> {
+    console.log('Writing file:', path);
+    // Mock implementation
+    await new Promise(resolve => setTimeout(resolve, 500));
   }
 
   async disconnect(session: Session): Promise<void> {

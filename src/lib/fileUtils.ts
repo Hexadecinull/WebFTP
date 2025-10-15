@@ -33,3 +33,16 @@ export function getFileExtension(filename: string): string {
 export function getFileName(path: string): string {
   return path.split('/').filter(Boolean).pop() || path;
 }
+
+export function isEditableFile(filename: string): boolean {
+  const editableExtensions = [
+    'txt', 'md', 'json', 'xml', 'html', 'htm', 'css', 'js', 'ts', 'tsx', 'jsx',
+    'py', 'java', 'cpp', 'c', 'h', 'hpp', 'cs', 'php', 'rb', 'go', 'rs', 'swift',
+    'kt', 'scala', 'sh', 'bash', 'yml', 'yaml', 'toml', 'ini', 'conf', 'cfg',
+    'log', 'sql', 'env', 'gitignore', 'dockerfile', 'makefile', 'cmake', 'gradle',
+    'properties', 'vue', 'svelte', 'astro', 'r', 'lua', 'pl', 'pm', 'tcl'
+  ];
+  
+  const ext = getFileExtension(filename);
+  return editableExtensions.includes(ext) || !ext.match(/^(exe|dll|so|dylib|bin|dat|pdf|doc|docx|xls|xlsx|ppt|pptx|zip|tar|gz|rar|7z|png|jpg|jpeg|gif|bmp|ico|svg|mp3|mp4|avi|mov|wmv|flv|mkv|webm|ogg|wav|flac)$/i);
+}

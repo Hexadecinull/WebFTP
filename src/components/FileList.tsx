@@ -2,13 +2,19 @@
 
 import { File, Folder, ArrowLeft } from 'lucide-react';
 import { FtpEntry } from '@/types/ftp';
-import { formatBytes, formatDate } from '@/lib/fileUtils';
+import { formatBytes, formatDate, isEditableFile } from '@/lib/fileUtils';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { FileContextMenu } from './FileContextMenu';
 
 interface FileListProps {
   files: FtpEntry[];
   onFileClick: (file: FtpEntry) => void;
   onFileDoubleClick: (file: FtpEntry) => void;
+  onDownload: (file: FtpEntry) => void;
+  onDelete: (file: FtpEntry) => void;
+  onEdit: (file: FtpEntry) => void;
+  onOpen: (file: FtpEntry) => void;
+  onProperties: (file: FtpEntry) => void;
   selectedFile?: FtpEntry;
 }
 
@@ -16,21 +22,35 @@ export const FileList = ({
   files,
   onFileClick,
   onFileDoubleClick,
+  onDownload,
+  onDelete,
+  onEdit,
+  onOpen,
+  onProperties,
   selectedFile,
 }: FileListProps) => {
   return (
     <ScrollArea className="h-full">
       <div className="divide-y divide-border">
         {files.map((file) => (
-          <div
+          <FileContextMenu
             key={file.path}
-            className={`
-              flex items-center gap-3 px-4 py-3 file-list-hover
-              ${selectedFile?.path === file.path ? 'bg-accent' : ''}
-            `}
-            onClick={() => onFileClick(file)}
-            onDoubleClick={() => onFileDoubleClick(file)}
+            file={file}
+            onDownload={onDownload}
+            onDelete={onDelete}
+            onEdit={onEdit}
+            onOpen={onOpen}
+            onProperties={onProperties}
+            canEdit={!file.isDirectory && isEditableFile(file.name)}
           >
+            <div
+              className={`
+                flex items-center gap-3 px-4 py-3 cursor-pointer transition-colors hover:bg-accent/50
+                ${selectedFile?.path === file.path ? 'bg-accent' : ''}
+              `}
+              onClick={() => onFileClick(file)}
+              onDoubleClick={() => onFileDoubleClick(file)}
+            >
             <div className="flex-shrink-0">
               {file.name === '..' ? (
                 <ArrowLeft className="h-5 w-5 text-muted-foreground" />
@@ -58,7 +78,8 @@ export const FileList = ({
                 <p className="text-xs">{formatDate(file.modifiedAt)}</p>
               )}
             </div>
-          </div>
+            </div>
+          </FileContextMenu>
         ))}
 
         {files.length === 0 && (
