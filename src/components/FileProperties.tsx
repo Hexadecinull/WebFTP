@@ -2,6 +2,7 @@
 
 import { FtpEntry } from '@/types/ftp';
 import { formatBytes, formatDate } from '@/lib/fileUtils';
+import { getFileType } from '@/lib/fileTypes';
 import {
   Dialog,
   DialogContent,
@@ -47,7 +48,7 @@ export const FileProperties = ({
             <div className="flex justify-between py-2 border-b border-border">
               <span className="text-muted-foreground">Type:</span>
               <span className="font-medium">
-                {file.isDirectory ? 'Folder' : 'File'}
+                {file.isDirectory ? 'Folder' : getFileType(file.name)}
               </span>
             </div>
             

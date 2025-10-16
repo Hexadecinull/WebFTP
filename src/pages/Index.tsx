@@ -1,6 +1,6 @@
 // Main Application - MVP Pattern Integration
 
-import { useState, useMemo, useCallback } from 'react';
+import { useState, useMemo, useCallback, useEffect } from 'react';
 import { SidebarProvider } from '@/components/ui/sidebar';
 import { AppSidebar } from '@/components/AppSidebar';
 import { ConnectionDialog } from '@/components/ConnectionDialog';
@@ -10,10 +10,14 @@ import { Breadcrumb } from '@/components/Breadcrumb';
 import { FileEditor } from '@/components/FileEditor';
 import { FileProperties } from '@/components/FileProperties';
 import { Settings } from '@/components/Settings';
+import { BookmarksDialog } from '@/components/BookmarksDialog';
+import { RecentConnectionsDialog } from '@/components/RecentConnectionsDialog';
+import { SavedConnectionsDialog } from '@/components/SavedConnectionsDialog';
 import { Button } from '@/components/ui/button';
 import { RefreshCw, Upload, FolderPlus, Trash2, Settings as SettingsIcon } from 'lucide-react';
 import { FtpEntry, ConnectOptions } from '@/types/ftp';
 import { isEditableFile } from '@/lib/fileUtils';
+import logo from '@/assets/logo.png';
 
 // Model Layer
 import { FtpRepositoryImpl } from '@/models/FtpRepository';
@@ -60,11 +64,30 @@ const Index = () => {
   const [editingFile, setEditingFile] = useState<{ path: string; name: string; content: string } | null>(null);
   const [propertiesFile, setPropertiesFile] = useState<FtpEntry | null>(null);
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const [bookmarksOpen, setBookmarksOpen] = useState(false);
+  const [recentConnectionsOpen, setRecentConnectionsOpen] = useState(false);
+  const [savedConnectionsOpen, setSavedConnectionsOpen] = useState(false);
+
+  // Store recent connections
+  useEffect(() => {
+    if (session) {
+      const recentConnections = JSON.parse(localStorage.getItem('recentConnections') || '[]');
+      const newConnection = {
+        id: Date.now().toString(),
+        ...session,
+        timestamp: Date.now(),
+      };
+      const updated = [newConnection, ...recentConnections.filter((c: any) => c.host !== session.host)].slice(0, 10);
+      localStorage.setItem('recentConnections', JSON.stringify(updated));
+    }
+  }, [session]);
 
   // View event handlers
   const handleConnect = useCallback(async (options: ConnectOptions) => {
     await connect(options);
     setConnectionDialogOpen(false);
+    setSavedConnectionsOpen(false);
+    setRecentConnectionsOpen(false);
   }, [connect]);
 
   const handleFileClick = useCallback((file: FtpEntry) => {
@@ -166,13 +189,16 @@ const Index = () => {
       <div className="flex h-screen w-full bg-background">
         <AppSidebar
           onNewConnection={() => setConnectionDialogOpen(true)}
-          onShowBookmarks={() => {}}
+          onShowBookmarks={() => setBookmarksOpen(true)}
+          onShowSavedConnections={() => setSavedConnectionsOpen(true)}
+          onShowRecentConnections={() => setRecentConnectionsOpen(true)}
         />
 
         <div className="flex-1 flex flex-col overflow-hidden">
           {/* Header */}
           <div className="h-14 border-b border-border flex items-center justify-between px-4 bg-card">
             <div className="flex items-center gap-4">
+              <img src={logo} alt="WebFTP" className="h-8 w-8" />
               <h1 className="text-lg font-semibold">WebFTP</h1>
               {session && (
                 <span className="text-sm text-muted-foreground">
@@ -343,6 +369,27 @@ const Index = () => {
 
         {/* Settings */}
         {settingsOpen && <Settings onClose={() => setSettingsOpen(false)} />}
+
+        {/* Bookmarks */}
+        <BookmarksDialog
+          open={bookmarksOpen}
+          onOpenChange={setBookmarksOpen}
+          onNavigate={navigateToPath}
+        />
+
+        {/* Recent Connections */}
+        <RecentConnectionsDialog
+          open={recentConnectionsOpen}
+          onOpenChange={setRecentConnectionsOpen}
+          onConnect={handleConnect}
+        />
+
+        {/* Saved Connections */}
+        <SavedConnectionsDialog
+          open={savedConnectionsOpen}
+          onOpenChange={setSavedConnectionsOpen}
+          onConnect={handleConnect}
+        />
       </div>
     </SidebarProvider>
   );

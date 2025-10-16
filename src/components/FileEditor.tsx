@@ -1,11 +1,14 @@
-// View Layer - File Editor Component
+// View Layer - File Editor Component with Syntax Highlighting
 
 import { useState, useEffect } from 'react';
 import { X, Save, Download } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Textarea } from '@/components/ui/textarea';
-import { ScrollArea } from '@/components/ui/scroll-area';
 import { toast } from '@/hooks/use-toast';
+import CodeMirror from '@uiw/react-codemirror';
+import { getLanguageExtension } from '@/lib/editorLanguages';
+import { oneDark } from '@codemirror/theme-one-dark';
+import { EditorView } from '@codemirror/view';
+import { useTheme } from '@/contexts/ThemeContext';
 
 interface FileEditorProps {
   filename: string;
@@ -23,10 +26,13 @@ export const FileEditor = ({
   const [content, setContent] = useState(initialContent);
   const [isSaving, setIsSaving] = useState(false);
   const [hasChanges, setHasChanges] = useState(false);
+  const { theme } = useTheme();
 
   useEffect(() => {
     setHasChanges(content !== initialContent);
   }, [content, initialContent]);
+
+  const languageExtension = getLanguageExtension(filename);
 
   const handleSave = async () => {
     setIsSaving(true);
@@ -113,12 +119,36 @@ export const FileEditor = ({
         </div>
 
         {/* Editor */}
-        <div className="flex-1 p-4">
-          <Textarea
+        <div className="flex-1 overflow-hidden">
+          <CodeMirror
             value={content}
-            onChange={(e) => setContent(e.target.value)}
-            className="h-full font-mono text-sm resize-none"
-            placeholder="File content..."
+            height="100%"
+            theme={theme === 'dark' ? oneDark : undefined}
+            extensions={languageExtension ? [languageExtension, EditorView.lineWrapping] : [EditorView.lineWrapping]}
+            onChange={(value) => setContent(value)}
+            basicSetup={{
+              lineNumbers: true,
+              highlightActiveLineGutter: true,
+              highlightSpecialChars: true,
+              foldGutter: true,
+              drawSelection: true,
+              dropCursor: true,
+              allowMultipleSelections: true,
+              indentOnInput: true,
+              syntaxHighlighting: true,
+              bracketMatching: true,
+              closeBrackets: true,
+              autocompletion: true,
+              rectangularSelection: true,
+              crosshairCursor: true,
+              highlightActiveLine: true,
+              highlightSelectionMatches: true,
+              closeBracketsKeymap: true,
+              searchKeymap: true,
+              foldKeymap: true,
+              completionKeymap: true,
+              lintKeymap: true,
+            }}
           />
         </div>
       </div>

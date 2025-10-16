@@ -126,9 +126,6 @@ All colors MUST be HSL.
     font-feature-settings: "rlig" 1, "calt" 1;
   }
 
-  html {
-    @apply dark;
-  }
 }
 
 @layer utilities {

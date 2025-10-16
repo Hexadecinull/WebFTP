@@ -79,7 +79,8 @@ export class FtpRepositoryImpl implements FtpRepository {
 
   async download(session: Session, remotePath: string, onProgress?: ProgressCallback): Promise<Blob> {
     // Simulate download with progress
-    const totalSize = 1024 * 1024; // 1MB
+    const content = await this.readFile(session, remotePath);
+    const totalSize = content.length;
     const chunks = 20;
     const chunkSize = totalSize / chunks;
     
@@ -88,7 +89,7 @@ export class FtpRepositoryImpl implements FtpRepository {
       onProgress?.(i * chunkSize, totalSize);
     }
     
-    return new Blob(['Mock file content'], { type: 'text/plain' });
+    return new Blob([content], { type: 'application/octet-stream' });
   }
 
   async upload(session: Session, remotePath: string, file: File, onProgress?: ProgressCallback): Promise<void> {
