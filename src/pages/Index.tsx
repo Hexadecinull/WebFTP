@@ -1,7 +1,7 @@
 // Main Application - MVP Pattern Integration
 
 import { useState, useMemo, useCallback, useEffect } from 'react';
-import { SidebarProvider } from '@/components/ui/sidebar';
+import { SidebarProvider, SidebarTrigger } from '@/components/ui/sidebar';
 import { AppSidebar } from '@/components/AppSidebar';
 import { ConnectionDialog } from '@/components/ConnectionDialog';
 import { FileList } from '@/components/FileList';
@@ -94,14 +94,20 @@ const Index = () => {
     setSelectedFile(file);
   }, []);
 
-  const handleFileDoubleClick = useCallback((file: FtpEntry) => {
+  const handleFileDoubleClick = useCallback(async (file: FtpEntry) => {
     if (file.isDirectory) {
       navigateToPath(file.path);
       setSelectedFile(undefined);
-    } else {
-      startDownload(file.path, file.name);
+    } else if (isEditableFile(file.name)) {
+      // Open file for editing
+      try {
+        const content = await readFile(file.path);
+        setEditingFile({ path: file.path, name: file.name, content });
+      } catch (error) {
+        console.error('Failed to read file:', error);
+      }
     }
-  }, [navigateToPath, startDownload]);
+  }, [navigateToPath, readFile]);
 
   const handleUploadClick = useCallback(() => {
     const input = document.createElement('input');
@@ -198,6 +204,7 @@ const Index = () => {
           {/* Header */}
           <div className="h-14 border-b border-border flex items-center justify-between px-4 bg-card">
             <div className="flex items-center gap-4">
+              <SidebarTrigger />
               <img src={logo} alt="WebFTP" className="h-8 w-8" />
               <h1 className="text-lg font-semibold">WebFTP</h1>
               {session && (

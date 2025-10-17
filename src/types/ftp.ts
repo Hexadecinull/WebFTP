@@ -14,7 +14,7 @@ export interface ConnectOptions {
   port: number;
   username: string;
   password: string;
-  protocol: 'ftp' | 'ftps' | 'sftp';
+  protocol: 'ftp' | 'ftps' | 'sftp' | 'smb' | 'webdav' | 'local';
   sshKey?: string;
 }
 
@@ -45,6 +45,6 @@ export interface Bookmark {
   host: string;
   port: number;
   username: string;
-  protocol: 'ftp' | 'ftps' | 'sftp';
+  protocol: 'ftp' | 'ftps' | 'sftp' | 'smb' | 'webdav' | 'local';
   createdAt: Date;
 }

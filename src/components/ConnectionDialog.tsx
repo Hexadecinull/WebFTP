@@ -50,7 +50,7 @@ export const ConnectionDialog = ({
               <Label htmlFor="protocol">Protocol</Label>
               <Select
                 value={formData.protocol}
-                onValueChange={(value: 'ftp' | 'ftps' | 'sftp') =>
+                onValueChange={(value: 'ftp' | 'ftps' | 'sftp' | 'smb' | 'webdav' | 'local') =>
                   setFormData(prev => ({ ...prev, protocol: value }))
                 }
               >
@@ -59,8 +59,11 @@ export const ConnectionDialog = ({
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="ftp">FTP</SelectItem>
-                  <SelectItem value="ftps">FTPS</SelectItem>
-                  <SelectItem value="sftp">SFTP</SelectItem>
+                  <SelectItem value="ftps">FTPS (FTP over SSL/TLS)</SelectItem>
+                  <SelectItem value="sftp">SFTP (SSH File Transfer)</SelectItem>
+                  <SelectItem value="smb">SMB (Windows Share)</SelectItem>
+                  <SelectItem value="webdav">WebDAV</SelectItem>
+                  <SelectItem value="local">Local Network</SelectItem>
                 </SelectContent>
               </Select>
             </div>

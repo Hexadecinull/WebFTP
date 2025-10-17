@@ -84,10 +84,11 @@ export const Settings = ({ onClose }: SettingsProps) => {
         {/* Content */}
         <ScrollArea className="flex-1 p-6">
           <Tabs defaultValue="appearance" className="w-full max-w-3xl mx-auto">
-            <TabsList className="grid w-full grid-cols-3">
+            <TabsList className="grid w-full grid-cols-4">
               <TabsTrigger value="appearance">Appearance</TabsTrigger>
               <TabsTrigger value="connection">Connection</TabsTrigger>
               <TabsTrigger value="advanced">Advanced</TabsTrigger>
+              <TabsTrigger value="about">About</TabsTrigger>
             </TabsList>
             
             <TabsContent value="appearance" className="space-y-6 mt-6">
@@ -205,6 +206,68 @@ export const Settings = ({ onClose }: SettingsProps) => {
                       <p className="text-sm text-muted-foreground">Use passive FTP mode for better firewall compatibility</p>
                     </div>
                     <Switch defaultChecked={true} />
+                  </div>
+                </div>
+              </div>
+            </TabsContent>
+            
+            <TabsContent value="about" className="space-y-6 mt-6">
+              <div className="space-y-4">
+                <div className="text-center space-y-4 py-6">
+                  <div className="flex justify-center">
+                    <div className="w-24 h-24 rounded-lg bg-primary/10 flex items-center justify-center">
+                      <span className="text-4xl font-bold text-primary">WF</span>
+                    </div>
+                  </div>
+                  
+                  <div>
+                    <h2 className="text-2xl font-bold">WebFTP</h2>
+                    <p className="text-muted-foreground">Version 1.0.0</p>
+                  </div>
+                  
+                  <div className="max-w-md mx-auto space-y-4 text-left">
+                    <div className="p-4 border border-border rounded-lg">
+                      <Label className="text-base font-semibold">Authors</Label>
+                      <p className="text-sm text-muted-foreground mt-1">Lovable AI & User Collaboration</p>
+                    </div>
+                    
+                    <div className="p-4 border border-border rounded-lg">
+                      <Label className="text-base font-semibold">Technologies</Label>
+                      <div className="flex flex-wrap gap-2 mt-2">
+                        <span className="px-2 py-1 bg-primary/10 text-primary rounded text-xs font-medium">React</span>
+                        <span className="px-2 py-1 bg-primary/10 text-primary rounded text-xs font-medium">TypeScript</span>
+                        <span className="px-2 py-1 bg-primary/10 text-primary rounded text-xs font-medium">Tailwind CSS</span>
+                        <span className="px-2 py-1 bg-primary/10 text-primary rounded text-xs font-medium">Vite</span>
+                        <span className="px-2 py-1 bg-primary/10 text-primary rounded text-xs font-medium">CodeMirror</span>
+                        <span className="px-2 py-1 bg-primary/10 text-primary rounded text-xs font-medium">Lovable Cloud</span>
+                      </div>
+                    </div>
+                    
+                    <div className="p-4 border border-border rounded-lg">
+                      <Label className="text-base font-semibold">Supported Protocols</Label>
+                      <div className="flex flex-wrap gap-2 mt-2">
+                        <span className="px-2 py-1 bg-accent text-accent-foreground rounded text-xs">FTP</span>
+                        <span className="px-2 py-1 bg-accent text-accent-foreground rounded text-xs">FTPS</span>
+                        <span className="px-2 py-1 bg-accent text-accent-foreground rounded text-xs">SFTP</span>
+                        <span className="px-2 py-1 bg-accent text-accent-foreground rounded text-xs">SMB</span>
+                        <span className="px-2 py-1 bg-accent text-accent-foreground rounded text-xs">WebDAV</span>
+                        <span className="px-2 py-1 bg-accent text-accent-foreground rounded text-xs">Local Network</span>
+                      </div>
+                    </div>
+                    
+                    <div className="p-4 border border-border rounded-lg">
+                      <Label className="text-base font-semibold">Description</Label>
+                      <p className="text-sm text-muted-foreground mt-1">
+                        A modern, web-based FTP client with support for multiple protocols, 
+                        inline file editing, and a beautiful user interface. Built with React 
+                        and powered by Lovable Cloud.
+                      </p>
+                    </div>
+                    
+                    <div className="p-4 border border-border rounded-lg">
+                      <Label className="text-base font-semibold">License</Label>
+                      <p className="text-sm text-muted-foreground mt-1">MIT License</p>
+                    </div>
                   </div>
                 </div>
               </div>

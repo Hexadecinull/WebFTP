@@ -46,7 +46,7 @@ export const FileList = ({
             <div
               className={`
                 flex items-center gap-3 px-4 py-3 cursor-pointer transition-colors hover:bg-accent/50
-                ${selectedFile?.path === file.path ? 'bg-accent' : ''}
+                ${selectedFile?.path === file.path ? 'bg-primary/10 border-l-2 border-primary' : ''}
               `}
               onClick={() => onFileClick(file)}
               onDoubleClick={() => onFileDoubleClick(file)}

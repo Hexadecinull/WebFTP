@@ -5,6 +5,7 @@ import { html } from '@codemirror/lang-html';
 import { css } from '@codemirror/lang-css';
 import { python } from '@codemirror/lang-python';
 import { markdown } from '@codemirror/lang-markdown';
+import { json } from '@codemirror/lang-json';
 
 export function getLanguageExtension(filename: string) {
   const ext = filename.split('.').pop()?.toLowerCase();
@@ -30,6 +31,8 @@ export function getLanguageExtension(filename: string) {
     case 'md':
     case 'markdown':
       return markdown();
+    case 'json':
+      return json();
     default:
       return undefined;
   }

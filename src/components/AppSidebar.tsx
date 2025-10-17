@@ -21,7 +21,7 @@ interface AppSidebarProps {
 
 export function AppSidebar({ onNewConnection, onShowBookmarks, onShowSavedConnections, onShowRecentConnections }: AppSidebarProps) {
   return (
-    <Sidebar className="border-r border-border">
+    <Sidebar collapsible="icon" className="border-r border-border">
       <SidebarContent>
         <SidebarGroup>
           <SidebarGroupLabel>Quick Access</SidebarGroupLabel>
