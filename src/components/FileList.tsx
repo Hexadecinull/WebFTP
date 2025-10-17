@@ -49,7 +49,14 @@ export const FileList = ({
                 ${selectedFile?.path === file.path ? 'bg-primary/10 border-l-2 border-primary' : ''}
               `}
               onClick={() => onFileClick(file)}
-              onDoubleClick={() => onFileDoubleClick(file)}
+              onDoubleClick={() => {
+                // Handle ".." navigation specially
+                if (file.name === '..' && file.isDirectory) {
+                  onOpen(file);
+                } else {
+                  onFileDoubleClick(file);
+                }
+              }}
             >
             <div className="flex-shrink-0">
               {file.name === '..' ? (

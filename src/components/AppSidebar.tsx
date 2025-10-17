@@ -10,6 +10,7 @@ import {
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
+  SidebarTrigger,
 } from '@/components/ui/sidebar';
 
 interface AppSidebarProps {
@@ -22,6 +23,9 @@ interface AppSidebarProps {
 export function AppSidebar({ onNewConnection, onShowBookmarks, onShowSavedConnections, onShowRecentConnections }: AppSidebarProps) {
   return (
     <Sidebar collapsible="icon" className="border-r border-border">
+      <div className="flex items-center justify-between p-2 border-b border-border">
+        <SidebarTrigger />
+      </div>
       <SidebarContent>
         <SidebarGroup>
           <SidebarGroupLabel>Quick Access</SidebarGroupLabel>
