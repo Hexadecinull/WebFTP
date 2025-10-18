@@ -82,7 +82,7 @@ export const RecentConnectionsDialog = ({ open, onOpenChange, onConnect }: Recen
                   >
                     <p className="font-medium">{conn.host}</p>
                     <p className="text-sm text-muted-foreground">
-                      {conn.protocol.toUpperCase()} - {conn.username} - {formatTimestamp(conn.timestamp)}
+                      {conn.protocol?.toUpperCase() || 'FTP'} - {conn.username} - {formatTimestamp(conn.timestamp)}
                     </p>
                   </div>
                   <Button

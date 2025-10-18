@@ -109,7 +109,7 @@ export const SavedConnections = ({ onConnect }: SavedConnectionsProps) => {
                   <div className="flex-1 cursor-pointer" onClick={() => onConnect(conn)}>
                     <p className="font-medium">{conn.name}</p>
                     <p className="text-sm text-muted-foreground">
-                      {conn.protocol.toUpperCase()} - {conn.host}:{conn.port}
+                      {conn.protocol?.toUpperCase() || 'FTP'} - {conn.host}:{conn.port}
                     </p>
                   </div>
                   <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
