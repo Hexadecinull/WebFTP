@@ -84,10 +84,11 @@ export const Settings = ({ onClose }: SettingsProps) => {
         {/* Content */}
         <ScrollArea className="flex-1 p-6">
           <Tabs defaultValue="appearance" className="w-full max-w-3xl mx-auto">
-            <TabsList className="grid w-full grid-cols-4">
+            <TabsList className="grid w-full grid-cols-5">
               <TabsTrigger value="appearance">Appearance</TabsTrigger>
               <TabsTrigger value="connection">Connection</TabsTrigger>
               <TabsTrigger value="advanced">Advanced</TabsTrigger>
+              <TabsTrigger value="professional">Professional</TabsTrigger>
               <TabsTrigger value="about">About</TabsTrigger>
             </TabsList>
             
@@ -127,7 +128,7 @@ export const Settings = ({ onClose }: SettingsProps) => {
                           className="w-8 h-8 rounded-full"
                           style={{ backgroundColor: `hsl(${theme.primary})` }}
                         />
-                        <span className="font-medium">{theme.name}</span>
+                        <span className="font-medium text-foreground">{theme.name}</span>
                       </div>
                     </button>
                   ))}
@@ -206,6 +207,60 @@ export const Settings = ({ onClose }: SettingsProps) => {
                       <p className="text-sm text-muted-foreground">Use passive FTP mode for better firewall compatibility</p>
                     </div>
                     <Switch defaultChecked={true} />
+                  </div>
+                </div>
+              </div>
+            </TabsContent>
+            
+            <TabsContent value="professional" className="space-y-6 mt-6">
+              <div className="space-y-4">
+                <Label className="text-lg font-semibold">Professional Settings</Label>
+                
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between p-4 border border-border rounded-lg">
+                    <div>
+                      <Label className="text-base font-semibold">Enable Compression</Label>
+                      <p className="text-sm text-muted-foreground">Compress files before transfer to save bandwidth</p>
+                    </div>
+                    <Switch defaultChecked={false} />
+                  </div>
+
+                  <div className="flex items-center justify-between p-4 border border-border rounded-lg">
+                    <div>
+                      <Label className="text-base font-semibold">Enable Transfer Verification</Label>
+                      <p className="text-sm text-muted-foreground">Verify file integrity after transfer using checksums</p>
+                    </div>
+                    <Switch defaultChecked={true} />
+                  </div>
+
+                  <div className="p-4 border border-border rounded-lg space-y-2">
+                    <Label className="text-base font-semibold">Encryption Level</Label>
+                    <p className="text-sm text-muted-foreground">Choose encryption strength for secure connections</p>
+                    <select className="w-full mt-2 p-2 border border-border rounded-lg bg-background">
+                      <option>Standard (128-bit)</option>
+                      <option>Strong (256-bit)</option>
+                      <option>Maximum (AES-256-GCM)</option>
+                    </select>
+                  </div>
+
+                  <div className="p-4 border border-border rounded-lg space-y-2">
+                    <Label className="text-base font-semibold">Bandwidth Limit</Label>
+                    <p className="text-sm text-muted-foreground">Limit transfer speed (KB/s, 0 = unlimited)</p>
+                    <Input type="number" defaultValue="0" min="0" className="mt-2" />
+                  </div>
+
+                  <div className="flex items-center justify-between p-4 border border-border rounded-lg">
+                    <div>
+                      <Label className="text-base font-semibold">Auto-Resume Transfers</Label>
+                      <p className="text-sm text-muted-foreground">Automatically resume interrupted transfers on reconnect</p>
+                    </div>
+                    <Switch defaultChecked={true} />
+                  </div>
+
+                  <div className="p-4 border border-border rounded-lg space-y-2">
+                    <Label className="text-base font-semibold">Session Timeout</Label>
+                    <p className="text-sm text-muted-foreground">Automatically disconnect after inactivity (minutes)</p>
+                    <Input type="number" defaultValue="30" min="5" max="120" className="mt-2" />
                   </div>
                 </div>
               </div>

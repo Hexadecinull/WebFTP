@@ -23,7 +23,7 @@ interface AppSidebarProps {
 export function AppSidebar({ onNewConnection, onShowBookmarks, onShowSavedConnections, onShowRecentConnections }: AppSidebarProps) {
   return (
     <Sidebar collapsible="icon" className="border-r border-border">
-      <div className="flex items-center justify-between p-2 border-b border-border">
+      <div className="flex items-center justify-end p-2 border-b border-border">
         <SidebarTrigger />
       </div>
       <SidebarContent>

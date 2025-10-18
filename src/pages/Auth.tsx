@@ -6,6 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import logo from '@/assets/logo.png';
 import { z } from 'zod';
 
@@ -14,6 +15,7 @@ const passwordSchema = z.string().min(6, 'Password must be at least 6 characters
 
 export default function Auth() {
   const [isLoading, setIsLoading] = useState(false);
+  const [forgotPasswordOpen, setForgotPasswordOpen] = useState(false);
   const { signIn, signUp, session } = useAuth();
   const navigate = useNavigate();
 
@@ -119,10 +121,39 @@ export default function Auth() {
                     disabled={isLoading}
                   />
                 </div>
-                <Button type="submit" className="w-full" disabled={isLoading}>
-                  {isLoading ? 'Signing in...' : 'Sign In'}
-                </Button>
-              </form>
+                  <Button type="submit" className="w-full" disabled={isLoading}>
+                    {isLoading ? 'Signing in...' : 'Sign In'}
+                  </Button>
+                  
+                  <Dialog open={forgotPasswordOpen} onOpenChange={setForgotPasswordOpen}>
+                    <DialogTrigger asChild>
+                      <button type="button" className="text-sm text-primary hover:underline mt-2">
+                        Forgot Password?
+                      </button>
+                    </DialogTrigger>
+                    <DialogContent>
+                      <DialogHeader>
+                        <DialogTitle>Account Recovery</DialogTitle>
+                        <DialogDescription>
+                          To recover your account, please contact support with the following information:
+                        </DialogDescription>
+                      </DialogHeader>
+                      <div className="space-y-4 py-4">
+                        <div className="space-y-2">
+                          <Label>Email Support</Label>
+                          <p className="text-sm">ssmg4@proton.me</p>
+                        </div>
+                        <div className="space-y-2">
+                          <Label>Phone Support</Label>
+                          <p className="text-sm">+33603462344</p>
+                        </div>
+                        <p className="text-xs text-muted-foreground">
+                          For professional use only. Abuse will face legal charges.
+                        </p>
+                      </div>
+                    </DialogContent>
+                  </Dialog>
+                </form>
             </TabsContent>
 
             <TabsContent value="signup">
@@ -160,10 +191,14 @@ export default function Auth() {
                     disabled={isLoading}
                   />
                 </div>
-                <Button type="submit" className="w-full" disabled={isLoading}>
-                  {isLoading ? 'Creating account...' : 'Sign Up'}
-                </Button>
-              </form>
+                  <Button type="submit" className="w-full" disabled={isLoading}>
+                    {isLoading ? 'Creating account...' : 'Sign Up'}
+                  </Button>
+                  
+                  <p className="text-xs text-muted-foreground text-center mt-4">
+                    Please verify your email after signing up to activate your account.
+                  </p>
+                </form>
             </TabsContent>
           </Tabs>
         </CardContent>
