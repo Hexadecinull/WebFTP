@@ -9,13 +9,30 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import logo from '@/assets/logo.png';
 import { z } from 'zod';
+import { AlertCircle, CheckCircle2 } from 'lucide-react';
 
 const emailSchema = z.string().email('Invalid email address');
-const passwordSchema = z.string().min(6, 'Password must be at least 6 characters');
+const passwordSchema = z.string().min(8, 'Password must be at least 8 characters');
+
+const getPasswordStrength = (password: string): { strength: number; label: string; color: string } => {
+  let strength = 0;
+  if (password.length >= 8) strength++;
+  if (password.length >= 12) strength++;
+  if (/[a-z]/.test(password) && /[A-Z]/.test(password)) strength++;
+  if (/\d/.test(password)) strength++;
+  if (/[^a-zA-Z0-9]/.test(password)) strength++;
+
+  if (strength <= 2) return { strength, label: 'Weak', color: 'bg-destructive' };
+  if (strength === 3) return { strength, label: 'Fair', color: 'bg-warning' };
+  if (strength === 4) return { strength, label: 'Good', color: 'bg-primary' };
+  return { strength, label: 'Strong', color: 'bg-success' };
+};
 
 export default function Auth() {
   const [isLoading, setIsLoading] = useState(false);
   const [forgotPasswordOpen, setForgotPasswordOpen] = useState(false);
+  const [signupPassword, setSignupPassword] = useState('');
+  const [signupConfirmPassword, setSignupConfirmPassword] = useState('');
   const { signIn, signUp, session } = useAuth();
   const navigate = useNavigate();
 
@@ -24,6 +41,10 @@ export default function Auth() {
     navigate('/');
     return null;
   }
+
+  const passwordStrength = getPasswordStrength(signupPassword);
+  const passwordsMatch = signupPassword === signupConfirmPassword && signupConfirmPassword !== '';
+  const passwordValid = signupPassword.length >= 8;
 
   const handleSignIn = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -116,44 +137,45 @@ export default function Auth() {
                     id="signin-password"
                     name="password"
                     type="password"
-                    placeholder="••••••••"
+                    placeholder="Enter password here"
                     required
                     disabled={isLoading}
                   />
                 </div>
-                  <Button type="submit" className="w-full" disabled={isLoading}>
-                    {isLoading ? 'Signing in...' : 'Sign In'}
-                  </Button>
-                  
-                  <Dialog open={forgotPasswordOpen} onOpenChange={setForgotPasswordOpen}>
-                    <DialogTrigger asChild>
-                      <button type="button" className="text-sm text-primary hover:underline mt-2">
-                        Forgot Password?
-                      </button>
-                    </DialogTrigger>
-                    <DialogContent>
-                      <DialogHeader>
-                        <DialogTitle>Account Recovery</DialogTitle>
-                        <DialogDescription>
-                          To recover your account, please contact support with the following information:
-                        </DialogDescription>
-                      </DialogHeader>
-                      <div className="space-y-4 py-4">
-                        <div className="space-y-2">
-                          <Label>Email Support</Label>
-                          <p className="text-sm">ssmg4@proton.me</p>
-                        </div>
-                        <div className="space-y-2">
-                          <Label>Phone Support</Label>
-                          <p className="text-sm">+33603462344</p>
-                        </div>
-                        <p className="text-xs text-muted-foreground">
-                          For professional use only. Abuse will face legal charges.
-                        </p>
+                
+                <Dialog open={forgotPasswordOpen} onOpenChange={setForgotPasswordOpen}>
+                  <DialogTrigger asChild>
+                    <button type="button" className="text-sm text-primary hover:underline">
+                      Forgot Password?
+                    </button>
+                  </DialogTrigger>
+                  <DialogContent>
+                    <DialogHeader>
+                      <DialogTitle>Account Recovery</DialogTitle>
+                      <DialogDescription>
+                        To recover your account, please contact support with the following information:
+                      </DialogDescription>
+                    </DialogHeader>
+                    <div className="space-y-4 py-4">
+                      <div className="space-y-2">
+                        <Label>Email Support</Label>
+                        <p className="text-sm">ssmg4@proton.me</p>
                       </div>
-                    </DialogContent>
-                  </Dialog>
-                </form>
+                      <div className="space-y-2">
+                        <Label>Phone Support</Label>
+                        <p className="text-sm">+33603462344</p>
+                      </div>
+                      <p className="text-xs text-muted-foreground">
+                        For professional use only. Abuse will face legal charges.
+                      </p>
+                    </div>
+                  </DialogContent>
+                </Dialog>
+
+                <Button type="submit" className="w-full" disabled={isLoading}>
+                  {isLoading ? 'Signing in...' : 'Sign In'}
+                </Button>
+              </form>
             </TabsContent>
 
             <TabsContent value="signup">
@@ -171,40 +193,92 @@ export default function Auth() {
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="signup-password">Password</Label>
-                  <Input
-                    id="signup-password"
-                    name="password"
-                    type="password"
-                    placeholder="••••••••"
-                    required
-                    disabled={isLoading}
-                  />
+                  <div className="relative">
+                    <Input
+                      id="signup-password"
+                      name="password"
+                      type="password"
+                      placeholder="Password must be at least 8 characters"
+                      required
+                      disabled={isLoading}
+                      value={signupPassword}
+                      onChange={(e) => setSignupPassword(e.target.value)}
+                      className={`pr-10 ${signupPassword ? (passwordValid ? 'border-success focus:ring-success' : 'border-destructive focus:ring-destructive') : ''}`}
+                    />
+                    {signupPassword && (
+                      <div className="absolute right-3 top-1/2 -translate-y-1/2">
+                        {passwordValid ? (
+                          <CheckCircle2 className="h-5 w-5 text-success" />
+                        ) : (
+                          <AlertCircle className="h-5 w-5 text-destructive" />
+                        )}
+                      </div>
+                    )}
+                  </div>
+                  {signupPassword && (
+                    <div className="space-y-1">
+                      <div className="flex gap-1 h-1">
+                        {[...Array(5)].map((_, i) => (
+                          <div
+                            key={i}
+                            className={`flex-1 rounded-full transition-all ${
+                              i < passwordStrength.strength ? passwordStrength.color : 'bg-muted'
+                            }`}
+                          />
+                        ))}
+                      </div>
+                      <p className={`text-xs ${passwordStrength.strength <= 2 ? 'text-destructive' : passwordStrength.strength === 3 ? 'text-warning' : 'text-success'}`}>
+                        Password strength: {passwordStrength.label}
+                      </p>
+                    </div>
+                  )}
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="signup-confirm">Confirm Password</Label>
-                  <Input
-                    id="signup-confirm"
-                    name="confirmPassword"
-                    type="password"
-                    placeholder="••••••••"
-                    required
-                    disabled={isLoading}
-                  />
+                  <div className="relative">
+                    <Input
+                      id="signup-confirm"
+                      name="confirmPassword"
+                      type="password"
+                      placeholder="Confirm your password"
+                      required
+                      disabled={isLoading}
+                      value={signupConfirmPassword}
+                      onChange={(e) => setSignupConfirmPassword(e.target.value)}
+                      className={`pr-10 ${signupConfirmPassword ? (passwordsMatch ? 'border-success focus:ring-success' : 'border-destructive focus:ring-destructive') : ''}`}
+                    />
+                    {signupConfirmPassword && (
+                      <div className="absolute right-3 top-1/2 -translate-y-1/2">
+                        {passwordsMatch ? (
+                          <CheckCircle2 className="h-5 w-5 text-success" />
+                        ) : (
+                          <AlertCircle className="h-5 w-5 text-destructive" />
+                        )}
+                      </div>
+                    )}
+                  </div>
                 </div>
-                  <Button type="submit" className="w-full" disabled={isLoading}>
-                    {isLoading ? 'Creating account...' : 'Sign Up'}
-                  </Button>
-                  
-                  <p className="text-xs text-muted-foreground text-center mt-4">
-                    Please verify your email after signing up to activate your account.
-                  </p>
-                </form>
+                <Button type="submit" className="w-full" disabled={isLoading}>
+                  {isLoading ? 'Creating account...' : 'Sign Up'}
+                </Button>
+                
+                <p className="text-xs text-muted-foreground text-center mt-4">
+                  Please verify your email after signing up to activate your account.
+                </p>
+              </form>
             </TabsContent>
           </Tabs>
         </CardContent>
 
         <CardFooter className="flex flex-col space-y-2 text-center text-sm text-muted-foreground">
           <p>Secure file transfer made easy</p>
+          <Button
+            variant="link"
+            className="text-xs"
+            onClick={() => navigate('/')}
+          >
+            Continue as Guest (No Sign Up Required)
+          </Button>
         </CardFooter>
       </Card>
     </div>

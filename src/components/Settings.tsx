@@ -125,10 +125,10 @@ export const Settings = ({ onClose }: SettingsProps) => {
                     >
                       <div className="flex items-center gap-3">
                         <div 
-                          className="w-8 h-8 rounded-full"
+                          className="w-8 h-8 rounded-full border border-border"
                           style={{ backgroundColor: `hsl(${theme.primary})` }}
                         />
-                        <span className="font-medium text-foreground">{theme.name}</span>
+                        <span className="font-medium" style={{ color: `hsl(${theme.primary})` }}>{theme.name}</span>
                       </div>
                     </button>
                   ))}

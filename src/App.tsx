@@ -8,9 +8,9 @@ import Auth from "./pages/Auth";
 import NotFound from "./pages/NotFound";
 import { useAuth } from "@/contexts/AuthContext";
 
-function ProtectedRoute({ children }: { children: React.ReactNode }) {
-  const { session } = useAuth();
-  return session ? <>{children}</> : <Navigate to="/auth" />;
+// Allow guest access - no authentication required
+function OptionalAuthRoute({ children }: { children: React.ReactNode }) {
+  return <>{children}</>;
 }
 
 const queryClient = new QueryClient();
@@ -23,7 +23,7 @@ const App = () => (
       <BrowserRouter>
         <Routes>
           <Route path="/auth" element={<Auth />} />
-          <Route path="/" element={<ProtectedRoute><Index /></ProtectedRoute>} />
+          <Route path="/" element={<OptionalAuthRoute><Index /></OptionalAuthRoute>} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>

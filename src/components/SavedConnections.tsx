@@ -84,8 +84,7 @@ export const SavedConnections = ({ onConnect }: SavedConnectionsProps) => {
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center justify-between">
-        <h3 className="text-lg font-semibold">Saved Connections</h3>
+      <div className="flex items-center justify-end">
         <Button size="sm" onClick={handleNew}>
           <Plus className="h-4 w-4 mr-2" />
           New

@@ -24,6 +24,7 @@ export function UserMenu() {
   const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  // Don't render anything if user is not logged in (guest mode)
   if (!user) return null;
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {

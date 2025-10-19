@@ -1,6 +1,7 @@
 // Main Application - MVP Pattern Integration
 
 import { useState, useMemo, useCallback, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { SidebarProvider, SidebarTrigger } from '@/components/ui/sidebar';
 import { AppSidebar } from '@/components/AppSidebar';
 import { ConnectionDialog } from '@/components/ConnectionDialog';
@@ -30,6 +31,8 @@ import { useRemoteExplorer } from '@/presenters/useRemoteExplorer';
 import { useTransferQueue } from '@/presenters/useTransferQueue';
 
 const Index = () => {
+  const navigate = useNavigate();
+  
   // Initialize Model layer
   const ftpRepository = useMemo(() => new FtpRepositoryImpl(), []);
   const transferQueueManager = useMemo(() => new TransferQueueManager(), []);
@@ -216,6 +219,15 @@ const Index = () => {
 
             <div className="flex items-center gap-2">
               <UserMenu />
+              {!session && (
+                <Button
+                  variant="default"
+                  size="sm"
+                  onClick={() => navigate('/auth')}
+                >
+                  Sign In / Sign Up
+                </Button>
+              )}
               
               <Button
                 variant="ghost"
