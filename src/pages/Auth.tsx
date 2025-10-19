@@ -9,7 +9,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import logo from '@/assets/logo.png';
 import { z } from 'zod';
-import { AlertCircle, CheckCircle2 } from 'lucide-react';
+import { AlertCircle, CheckCircle2, Eye, EyeOff } from 'lucide-react';
 
 const emailSchema = z.string().email('Invalid email address');
 const passwordSchema = z.string().min(8, 'Password must be at least 8 characters');
@@ -33,6 +33,9 @@ export default function Auth() {
   const [forgotPasswordOpen, setForgotPasswordOpen] = useState(false);
   const [signupPassword, setSignupPassword] = useState('');
   const [signupConfirmPassword, setSignupConfirmPassword] = useState('');
+  const [showSigninPassword, setShowSigninPassword] = useState(false);
+  const [showSignupPassword, setShowSignupPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const { signIn, signUp, session } = useAuth();
   const navigate = useNavigate();
 
@@ -133,14 +136,28 @@ export default function Auth() {
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="signin-password">Password</Label>
-                  <Input
-                    id="signin-password"
-                    name="password"
-                    type="password"
-                    placeholder="Enter password here"
-                    required
-                    disabled={isLoading}
-                  />
+                  <div className="relative">
+                    <Input
+                      id="signin-password"
+                      name="password"
+                      type={showSigninPassword ? "text" : "password"}
+                      placeholder="Enter password here"
+                      required
+                      disabled={isLoading}
+                      className="pr-10"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowSigninPassword(!showSigninPassword)}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                    >
+                      {showSigninPassword ? (
+                        <EyeOff className="h-4 w-4" />
+                      ) : (
+                        <Eye className="h-4 w-4" />
+                      )}
+                    </button>
+                  </div>
                 </div>
                 
                 <Dialog open={forgotPasswordOpen} onOpenChange={setForgotPasswordOpen}>
@@ -197,23 +214,36 @@ export default function Auth() {
                     <Input
                       id="signup-password"
                       name="password"
-                      type="password"
+                      type={showSignupPassword ? "text" : "password"}
                       placeholder="Password must be at least 8 characters"
                       required
                       disabled={isLoading}
                       value={signupPassword}
                       onChange={(e) => setSignupPassword(e.target.value)}
-                      className={`pr-10 ${signupPassword ? (passwordValid ? 'border-success focus:ring-success' : 'border-destructive focus:ring-destructive') : ''}`}
+                      className={`pr-20 ${signupPassword ? (passwordValid ? 'border-success focus:ring-success' : 'border-destructive focus:ring-destructive') : ''}`}
                     />
-                    {signupPassword && (
-                      <div className="absolute right-3 top-1/2 -translate-y-1/2">
-                        {passwordValid ? (
-                          <CheckCircle2 className="h-5 w-5 text-success" />
+                    <div className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center gap-2">
+                      {signupPassword && (
+                        <>
+                          {passwordValid ? (
+                            <CheckCircle2 className="h-5 w-5 text-success" />
+                          ) : (
+                            <AlertCircle className="h-5 w-5 text-destructive" />
+                          )}
+                        </>
+                      )}
+                      <button
+                        type="button"
+                        onClick={() => setShowSignupPassword(!showSignupPassword)}
+                        className="text-muted-foreground hover:text-foreground"
+                      >
+                        {showSignupPassword ? (
+                          <EyeOff className="h-4 w-4" />
                         ) : (
-                          <AlertCircle className="h-5 w-5 text-destructive" />
+                          <Eye className="h-4 w-4" />
                         )}
-                      </div>
-                    )}
+                      </button>
+                    </div>
                   </div>
                   {signupPassword && (
                     <div className="space-y-1">
@@ -239,23 +269,36 @@ export default function Auth() {
                     <Input
                       id="signup-confirm"
                       name="confirmPassword"
-                      type="password"
+                      type={showConfirmPassword ? "text" : "password"}
                       placeholder="Confirm your password"
                       required
                       disabled={isLoading}
                       value={signupConfirmPassword}
                       onChange={(e) => setSignupConfirmPassword(e.target.value)}
-                      className={`pr-10 ${signupConfirmPassword ? (passwordsMatch ? 'border-success focus:ring-success' : 'border-destructive focus:ring-destructive') : ''}`}
+                      className={`pr-20 ${signupConfirmPassword ? (passwordsMatch ? 'border-success focus:ring-success' : 'border-destructive focus:ring-destructive') : ''}`}
                     />
-                    {signupConfirmPassword && (
-                      <div className="absolute right-3 top-1/2 -translate-y-1/2">
-                        {passwordsMatch ? (
-                          <CheckCircle2 className="h-5 w-5 text-success" />
+                    <div className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center gap-2">
+                      {signupConfirmPassword && (
+                        <>
+                          {passwordsMatch ? (
+                            <CheckCircle2 className="h-5 w-5 text-success" />
+                          ) : (
+                            <AlertCircle className="h-5 w-5 text-destructive" />
+                          )}
+                        </>
+                      )}
+                      <button
+                        type="button"
+                        onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                        className="text-muted-foreground hover:text-foreground"
+                      >
+                        {showConfirmPassword ? (
+                          <EyeOff className="h-4 w-4" />
                         ) : (
-                          <AlertCircle className="h-5 w-5 text-destructive" />
+                          <Eye className="h-4 w-4" />
                         )}
-                      </div>
-                    )}
+                      </button>
+                    </div>
                   </div>
                 </div>
                 <Button type="submit" className="w-full" disabled={isLoading}>
@@ -272,13 +315,6 @@ export default function Auth() {
 
         <CardFooter className="flex flex-col space-y-2 text-center text-sm text-muted-foreground">
           <p>Secure file transfer made easy</p>
-          <Button
-            variant="link"
-            className="text-xs"
-            onClick={() => navigate('/')}
-          >
-            Continue as Guest (No Sign Up Required)
-          </Button>
         </CardFooter>
       </Card>
     </div>

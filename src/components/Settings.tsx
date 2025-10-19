@@ -1,7 +1,8 @@
 // View Layer - Settings Component
 
 import { useState } from 'react';
-import { X, Palette, Settings as SettingsIcon, Moon, Sun } from 'lucide-react';
+import { X, Palette, Settings as SettingsIcon, Moon, Sun, Lock } from 'lucide-react';
+import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -29,6 +30,7 @@ const themePresets = [
 ];
 
 export const Settings = ({ onClose }: SettingsProps) => {
+  const { user } = useAuth();
   const [selectedTheme, setSelectedTheme] = useState(themePresets[0]);
   const { theme, toggleTheme } = useTheme();
   const [concurrentTransfers, setConcurrentTransfers] = useState(() => {
@@ -88,7 +90,12 @@ export const Settings = ({ onClose }: SettingsProps) => {
               <TabsTrigger value="appearance">Appearance</TabsTrigger>
               <TabsTrigger value="connection">Connection</TabsTrigger>
               <TabsTrigger value="advanced">Advanced</TabsTrigger>
-              <TabsTrigger value="professional">Professional</TabsTrigger>
+              <TabsTrigger value="professional" disabled={!user}>
+                <div className="flex items-center gap-1">
+                  Professional
+                  {!user && <Lock className="h-3 w-3" />}
+                </div>
+              </TabsTrigger>
               <TabsTrigger value="about">About</TabsTrigger>
             </TabsList>
             
@@ -111,24 +118,27 @@ export const Settings = ({ onClose }: SettingsProps) => {
                 </div>
                 
                 <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-                  {themePresets.map((theme) => (
+                  {themePresets.map((themePreset) => (
                     <button
-                      key={theme.name}
-                      onClick={() => applyTheme(theme)}
+                      key={themePreset.name}
+                      onClick={() => applyTheme(themePreset)}
                       className={`
                         p-4 rounded-lg border-2 transition-all hover:scale-105
-                        ${selectedTheme.name === theme.name 
-                          ? 'border-primary bg-accent' 
+                        ${selectedTheme.name === themePreset.name 
+                          ? 'border-border' 
                           : 'border-border hover:border-primary/50'
                         }
                       `}
+                      style={selectedTheme.name === themePreset.name ? {
+                        boxShadow: `0 0 0 2px hsl(${themePreset.primary})`
+                      } : undefined}
                     >
                       <div className="flex items-center gap-3">
                         <div 
                           className="w-8 h-8 rounded-full border border-border"
-                          style={{ backgroundColor: `hsl(${theme.primary})` }}
+                          style={{ backgroundColor: `hsl(${themePreset.primary})` }}
                         />
-                        <span className="font-medium" style={{ color: `hsl(${theme.primary})` }}>{theme.name}</span>
+                        <span className="font-medium text-foreground">{themePreset.name}</span>
                       </div>
                     </button>
                   ))}

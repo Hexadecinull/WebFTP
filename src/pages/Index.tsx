@@ -1,7 +1,6 @@
 // Main Application - MVP Pattern Integration
 
 import { useState, useMemo, useCallback, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { SidebarProvider, SidebarTrigger } from '@/components/ui/sidebar';
 import { AppSidebar } from '@/components/AppSidebar';
 import { ConnectionDialog } from '@/components/ConnectionDialog';
@@ -20,6 +19,9 @@ import { FtpEntry, ConnectOptions } from '@/types/ftp';
 import { isEditableFile } from '@/lib/fileUtils';
 import logo from '@/assets/logo.png';
 import { UserMenu } from '@/components/UserMenu';
+import Auth from '@/pages/Auth';
+import { Dialog, DialogContent } from '@/components/ui/dialog';
+import { useAuth } from '@/contexts/AuthContext';
 
 // Model Layer
 import { FtpRepositoryImpl } from '@/models/FtpRepository';
@@ -31,7 +33,7 @@ import { useRemoteExplorer } from '@/presenters/useRemoteExplorer';
 import { useTransferQueue } from '@/presenters/useTransferQueue';
 
 const Index = () => {
-  const navigate = useNavigate();
+  const { user } = useAuth();
   
   // Initialize Model layer
   const ftpRepository = useMemo(() => new FtpRepositoryImpl(), []);
@@ -71,6 +73,7 @@ const Index = () => {
   const [bookmarksOpen, setBookmarksOpen] = useState(false);
   const [recentConnectionsOpen, setRecentConnectionsOpen] = useState(false);
   const [savedConnectionsOpen, setSavedConnectionsOpen] = useState(false);
+  const [authDialogOpen, setAuthDialogOpen] = useState(false);
 
   // Store recent connections
   useEffect(() => {
@@ -219,13 +222,13 @@ const Index = () => {
 
             <div className="flex items-center gap-2">
               <UserMenu />
-              {!session && (
+              {!user && (
                 <Button
                   variant="default"
                   size="sm"
-                  onClick={() => navigate('/auth')}
+                  onClick={() => setAuthDialogOpen(true)}
                 >
-                  Sign In / Sign Up
+                  Sign In
                 </Button>
               )}
               
@@ -411,6 +414,13 @@ const Index = () => {
           onOpenChange={setSavedConnectionsOpen}
           onConnect={handleConnect}
         />
+
+        {/* Auth Dialog */}
+        <Dialog open={authDialogOpen} onOpenChange={setAuthDialogOpen}>
+          <DialogContent className="max-w-md p-0 gap-0 overflow-hidden">
+            <Auth />
+          </DialogContent>
+        </Dialog>
       </div>
     </SidebarProvider>
   );
