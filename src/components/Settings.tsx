@@ -1,7 +1,7 @@
 // View Layer - Settings Component
 
-import { useState } from 'react';
-import { X, Palette, Settings as SettingsIcon, Moon, Sun, Lock } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { X, Palette, Settings as SettingsIcon, Moon, Sun, Lock, Github } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
@@ -11,6 +11,17 @@ import { Switch } from '@/components/ui/switch';
 import { Input } from '@/components/ui/input';
 import { toast } from '@/hooks/use-toast';
 import { useTheme } from '@/contexts/ThemeContext';
+import { supabase } from '@/integrations/supabase/client';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 
 interface SettingsProps {
   onClose: () => void;
@@ -30,8 +41,12 @@ const themePresets = [
 ];
 
 export const Settings = ({ onClose }: SettingsProps) => {
-  const { user } = useAuth();
-  const [selectedTheme, setSelectedTheme] = useState(themePresets[0]);
+  const { user, signOut } = useAuth();
+  const [hoveredTheme, setHoveredTheme] = useState<string | null>(null);
+  const [selectedTheme, setSelectedTheme] = useState(() => {
+    const savedPrimary = getComputedStyle(document.documentElement).getPropertyValue('--primary').trim();
+    return themePresets.find(t => t.primary === savedPrimary) || themePresets[0];
+  });
   const { theme, toggleTheme } = useTheme();
   const [concurrentTransfers, setConcurrentTransfers] = useState(() => {
     return parseInt(localStorage.getItem('concurrentTransfers') || '3');
@@ -42,11 +57,33 @@ export const Settings = ({ onClose }: SettingsProps) => {
   const [bufferSize, setBufferSize] = useState(() => {
     return parseInt(localStorage.getItem('bufferSize') || '8192');
   });
+  const [connectionTimeout, setConnectionTimeout] = useState(() => {
+    return parseInt(localStorage.getItem('connectionTimeout') || '30');
+  });
+  const [keepAliveInterval, setKeepAliveInterval] = useState(() => {
+    return parseInt(localStorage.getItem('keepAliveInterval') || '60');
+  });
+  const [enableLogging, setEnableLogging] = useState(() => {
+    return localStorage.getItem('enableLogging') === 'true';
+  });
+  const [usePassiveMode, setUsePassiveMode] = useState(() => {
+    return localStorage.getItem('usePassiveMode') !== 'false';
+  });
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+
+  useEffect(() => {
+    const currentPrimary = getComputedStyle(document.documentElement).getPropertyValue('--primary').trim();
+    const current = themePresets.find(t => t.primary === currentPrimary);
+    if (current) {
+      setSelectedTheme(current);
+    }
+  }, []);
 
   const applyTheme = (themePreset: typeof themePresets[0]) => {
     document.documentElement.style.setProperty('--primary', themePreset.primary);
     document.documentElement.style.setProperty('--accent', themePreset.accent);
     setSelectedTheme(themePreset);
+    localStorage.setItem('selectedThemeName', themePreset.name);
     toast({
       title: 'Theme Applied',
       description: `${themePreset.name} theme has been applied`,
@@ -66,6 +103,57 @@ export const Settings = ({ onClose }: SettingsProps) => {
   const handleBufferSizeChange = (value: number) => {
     setBufferSize(value);
     localStorage.setItem('bufferSize', value.toString());
+  };
+
+  const handleConnectionTimeoutChange = (value: number) => {
+    setConnectionTimeout(value);
+    localStorage.setItem('connectionTimeout', value.toString());
+  };
+
+  const handleKeepAliveIntervalChange = (value: number) => {
+    setKeepAliveInterval(value);
+    localStorage.setItem('keepAliveInterval', value.toString());
+  };
+
+  const handleEnableLoggingChange = (checked: boolean) => {
+    setEnableLogging(checked);
+    localStorage.setItem('enableLogging', checked.toString());
+  };
+
+  const handleUsePassiveModeChange = (checked: boolean) => {
+    setUsePassiveMode(checked);
+    localStorage.setItem('usePassiveMode', checked.toString());
+  };
+
+  const handleDeleteAccount = async () => {
+    if (!user) return;
+    
+    try {
+      // Delete user's profile
+      const { error: profileError } = await supabase
+        .from('profiles')
+        .delete()
+        .eq('id', user.id);
+
+      if (profileError) throw profileError;
+
+      // Delete user account (requires service role in production)
+      // This will trigger cascade deletion
+      await signOut();
+      
+      toast({
+        title: 'Account Deleted',
+        description: 'Your account has been successfully deleted',
+      });
+      
+      onClose();
+    } catch (error: any) {
+      toast({
+        title: 'Error',
+        description: error.message || 'Failed to delete account',
+        variant: 'destructive',
+      });
+    }
   };
 
   return (
@@ -118,30 +206,31 @@ export const Settings = ({ onClose }: SettingsProps) => {
                 </div>
                 
                 <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-                  {themePresets.map((themePreset) => (
-                    <button
-                      key={themePreset.name}
-                      onClick={() => applyTheme(themePreset)}
-                      className={`
-                        p-4 rounded-lg border-2 transition-all hover:scale-105
-                        ${selectedTheme.name === themePreset.name 
-                          ? 'border-border' 
-                          : 'border-border hover:border-primary/50'
-                        }
-                      `}
-                      style={selectedTheme.name === themePreset.name ? {
-                        boxShadow: `0 0 0 2px hsl(${themePreset.primary})`
-                      } : undefined}
-                    >
-                      <div className="flex items-center gap-3">
-                        <div 
-                          className="w-8 h-8 rounded-full border border-border"
-                          style={{ backgroundColor: `hsl(${themePreset.primary})` }}
-                        />
-                        <span className="font-medium text-foreground">{themePreset.name}</span>
-                      </div>
-                    </button>
-                  ))}
+                  {themePresets.map((themePreset) => {
+                    const isSelected = selectedTheme.name === themePreset.name;
+                    const displayColor = hoveredTheme === themePreset.name ? themePreset.primary : (isSelected ? themePreset.primary : undefined);
+                    
+                    return (
+                      <button
+                        key={themePreset.name}
+                        onClick={() => applyTheme(themePreset)}
+                        onMouseEnter={() => setHoveredTheme(themePreset.name)}
+                        onMouseLeave={() => setHoveredTheme(null)}
+                        className="p-4 rounded-lg border-2 border-border transition-all hover:scale-105"
+                        style={displayColor ? {
+                          boxShadow: `0 0 0 2px hsl(${displayColor})`
+                        } : undefined}
+                      >
+                        <div className="flex items-center gap-3">
+                          <div 
+                            className="w-8 h-8 rounded-full border border-border"
+                            style={{ backgroundColor: `hsl(${themePreset.primary})` }}
+                          />
+                          <span className="font-medium text-foreground">{themePreset.name}</span>
+                        </div>
+                      </button>
+                    );
+                  })}
                 </div>
               </div>
             </TabsContent>
@@ -162,13 +251,27 @@ export const Settings = ({ onClose }: SettingsProps) => {
                   <div className="p-4 border border-border rounded-lg space-y-2">
                     <Label className="text-base font-semibold">Connection Timeout</Label>
                     <p className="text-sm text-muted-foreground">Timeout for FTP/SFTP connections (seconds)</p>
-                    <Input type="number" defaultValue="30" className="mt-2" />
+                    <Input 
+                      type="number" 
+                      value={connectionTimeout}
+                      onChange={(e) => handleConnectionTimeoutChange(parseInt(e.target.value))}
+                      min="5"
+                      max="300"
+                      className="mt-2" 
+                    />
                   </div>
 
                   <div className="p-4 border border-border rounded-lg space-y-2">
                     <Label className="text-base font-semibold">Keep-Alive Interval</Label>
                     <p className="text-sm text-muted-foreground">Send keep-alive packets every (seconds)</p>
-                    <Input type="number" defaultValue="60" className="mt-2" />
+                    <Input 
+                      type="number" 
+                      value={keepAliveInterval}
+                      onChange={(e) => handleKeepAliveIntervalChange(parseInt(e.target.value))}
+                      min="10"
+                      max="300"
+                      className="mt-2" 
+                    />
                   </div>
                 </div>
               </div>
@@ -208,7 +311,7 @@ export const Settings = ({ onClose }: SettingsProps) => {
                       <Label className="text-base font-semibold">Enable Logging</Label>
                       <p className="text-sm text-muted-foreground">Log FTP commands and responses to console</p>
                     </div>
-                    <Switch defaultChecked={false} />
+                    <Switch checked={enableLogging} onCheckedChange={handleEnableLoggingChange} />
                   </div>
 
                   <div className="flex items-center justify-between p-4 border border-border rounded-lg">
@@ -216,7 +319,7 @@ export const Settings = ({ onClose }: SettingsProps) => {
                       <Label className="text-base font-semibold">Use Passive Mode</Label>
                       <p className="text-sm text-muted-foreground">Use passive FTP mode for better firewall compatibility</p>
                     </div>
-                    <Switch defaultChecked={true} />
+                    <Switch checked={usePassiveMode} onCheckedChange={handleUsePassiveModeChange} />
                   </div>
                 </div>
               </div>
@@ -333,6 +436,37 @@ export const Settings = ({ onClose }: SettingsProps) => {
                       <Label className="text-base font-semibold">License</Label>
                       <p className="text-sm text-muted-foreground mt-1">MIT License</p>
                     </div>
+
+                    <div className="p-4 border border-border rounded-lg">
+                      <Label className="text-base font-semibold">Source Code</Label>
+                      <p className="text-sm text-muted-foreground mt-1 mb-3">
+                        This project is open source under MIT License
+                      </p>
+                      <Button
+                        variant="outline"
+                        className="w-full"
+                        onClick={() => window.open('https://github.com/SSMG4/WebFTP', '_blank')}
+                      >
+                        <Github className="h-4 w-4 mr-2" />
+                        View on GitHub
+                      </Button>
+                    </div>
+
+                    {user && (
+                      <div className="p-4 border border-destructive/50 rounded-lg bg-destructive/5">
+                        <Label className="text-base font-semibold text-destructive">Danger Zone</Label>
+                        <p className="text-sm text-muted-foreground mt-1 mb-3">
+                          Permanently delete your account and all associated data
+                        </p>
+                        <Button
+                          variant="destructive"
+                          className="w-full"
+                          onClick={() => setDeleteDialogOpen(true)}
+                        >
+                          Delete Account
+                        </Button>
+                      </div>
+                    )}
                   </div>
                 </div>
               </div>
@@ -340,6 +474,29 @@ export const Settings = ({ onClose }: SettingsProps) => {
           </Tabs>
         </ScrollArea>
       </div>
+
+      {/* Delete Account Confirmation Dialog */}
+      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This action cannot be undone. This will permanently delete your account
+              and remove all your data from our servers including saved connections,
+              bookmarks, and settings.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDeleteAccount}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              Delete Account
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };

@@ -417,10 +417,15 @@ const Index = () => {
 
         {/* Auth Dialog */}
         <Dialog open={authDialogOpen} onOpenChange={setAuthDialogOpen}>
-          <DialogContent className="max-w-md p-0 gap-0 overflow-hidden">
+          <DialogContent className="max-w-md p-0 gap-0 overflow-hidden border-0">
             <Auth />
           </DialogContent>
         </Dialog>
+
+        {/* Blur overlay when auth dialog is open */}
+        {authDialogOpen && (
+          <div className="fixed inset-0 bg-background/80 backdrop-blur-sm z-40" />
+        )}
       </div>
     </SidebarProvider>
   );

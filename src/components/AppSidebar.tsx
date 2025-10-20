@@ -2,6 +2,7 @@
 
 import { Plus, Server, Bookmark, History } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
+import { useState, useEffect } from 'react';
 import {
   Sidebar,
   SidebarContent,
@@ -15,6 +16,19 @@ import {
   useSidebar,
 } from '@/components/ui/sidebar';
 
+const motivationalPhrases = [
+  "Stay focused!",
+  "You got this!",
+  "Keep pushing!",
+  "Almost there!",
+  "Great work!",
+  "Stay strong!",
+  "Keep going!",
+  "Nice job!",
+  "Well done!",
+  "Keep it up!",
+];
+
 interface AppSidebarProps {
   onNewConnection: () => void;
   onShowBookmarks: () => void;
@@ -25,13 +39,20 @@ interface AppSidebarProps {
 export function AppSidebar({ onNewConnection, onShowBookmarks, onShowSavedConnections, onShowRecentConnections }: AppSidebarProps) {
   const { open } = useSidebar();
   const { user } = useAuth();
+  const [motivationalPhrase, setMotivationalPhrase] = useState('');
+
+  useEffect(() => {
+    const randomPhrase = motivationalPhrases[Math.floor(Math.random() * motivationalPhrases.length)];
+    setMotivationalPhrase(randomPhrase);
+  }, [open]);
   
   return (
     <Sidebar collapsible="icon" className="border-r border-border">
-      <div className="flex items-center justify-end p-2 border-b border-border">
-        <div className="bg-primary/10 hover:bg-primary/20 transition-colors rounded-md">
-          <SidebarTrigger />
-        </div>
+      <div className="flex items-center justify-between p-2 border-b border-border">
+        {open && (
+          <span className="text-xs text-muted-foreground italic px-2">{motivationalPhrase}</span>
+        )}
+        <SidebarTrigger className="ml-auto" />
       </div>
       <SidebarContent>
         <SidebarGroup>
