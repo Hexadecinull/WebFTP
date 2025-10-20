@@ -9,7 +9,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import logo from '@/assets/logo.png';
 import { z } from 'zod';
-import { AlertCircle, CheckCircle2, Eye, EyeOff } from 'lucide-react';
+import { AlertCircle, CheckCircle2, Eye, EyeOff, X } from 'lucide-react';
 
 const emailSchema = z.string().email('Invalid email address');
 const passwordSchema = z.string().min(8, 'Password must be at least 8 characters');
@@ -28,7 +28,7 @@ const getPasswordStrength = (password: string): { strength: number; label: strin
   return { strength, label: 'Strong', color: 'bg-success' };
 };
 
-export default function Auth() {
+export default function Auth({ onClose }: { onClose?: () => void }) {
   const [isLoading, setIsLoading] = useState(false);
   const [forgotPasswordOpen, setForgotPasswordOpen] = useState(false);
   const [signupPassword, setSignupPassword] = useState('');
@@ -41,7 +41,8 @@ export default function Auth() {
 
   // Redirect if already logged in
   if (session) {
-    navigate('/');
+    if (onClose) onClose();
+    else navigate('/');
     return null;
   }
 
@@ -69,7 +70,8 @@ export default function Auth() {
     const { error } = await signIn(email, password);
     
     if (!error) {
-      navigate('/');
+      if (onClose) onClose();
+      else navigate('/');
     }
     
     setIsLoading(false);
@@ -103,8 +105,18 @@ export default function Auth() {
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-background via-accent/5 to-background p-4">
-      <Card className="w-full max-w-md">
-        <CardHeader className="space-y-4 text-center">
+      <Card className="w-full max-w-md relative">
+        {onClose && (
+          <Button
+            variant="ghost"
+            size="icon"
+            className="absolute top-4 right-4 h-8 w-8"
+            onClick={onClose}
+          >
+            <X className="h-4 w-4" />
+          </Button>
+        )}
+        <CardHeader className="space-y-4 text-center">{/*...keep existing code*/}
           <div className="flex justify-center">
             <img src={logo} alt="WebFTP" className="h-16 w-16" />
           </div>

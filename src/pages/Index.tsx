@@ -415,17 +415,20 @@ const Index = () => {
           onConnect={handleConnect}
         />
 
-        {/* Auth Dialog */}
-        <Dialog open={authDialogOpen} onOpenChange={setAuthDialogOpen}>
-          <DialogContent className="max-w-md p-0 gap-0 overflow-hidden border-0">
-            <Auth />
-          </DialogContent>
-        </Dialog>
-
         {/* Blur overlay when auth dialog is open */}
         {authDialogOpen && (
-          <div className="fixed inset-0 bg-background/80 backdrop-blur-sm z-40" />
+          <div 
+            className="fixed inset-0 bg-blue-500/20 backdrop-blur-sm z-40" 
+            onClick={() => setAuthDialogOpen(false)}
+          />
         )}
+
+        {/* Auth Dialog */}
+        <Dialog open={authDialogOpen} onOpenChange={setAuthDialogOpen}>
+          <DialogContent className="max-w-md max-h-[90vh] p-0 gap-0 overflow-hidden border-0 z-50">
+            <Auth onClose={() => setAuthDialogOpen(false)} />
+          </DialogContent>
+        </Dialog>
       </div>
     </SidebarProvider>
   );

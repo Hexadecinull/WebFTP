@@ -17,16 +17,16 @@ import {
 } from '@/components/ui/sidebar';
 
 const motivationalPhrases = [
-  "Stay focused!",
-  "You got this!",
-  "Keep pushing!",
-  "Almost there!",
-  "Great work!",
-  "Stay strong!",
-  "Keep going!",
-  "Nice job!",
-  "Well done!",
-  "Keep it up!",
+  "Stay focused and keep building!",
+  "You got this - keep going strong!",
+  "Keep pushing forward, you're doing great!",
+  "Almost there, don't give up now!",
+  "Great work - you're making progress!",
+  "Stay strong and keep at it!",
+  "Keep going, success is near!",
+  "Nice job - you're on the right track!",
+  "Well done - keep up the momentum!",
+  "Keep it up, you're crushing it!",
 ];
 
 interface AppSidebarProps {
@@ -50,7 +50,7 @@ export function AppSidebar({ onNewConnection, onShowBookmarks, onShowSavedConnec
     <Sidebar collapsible="icon" className="border-r border-border">
       <div className="flex items-center justify-between p-2 border-b border-border">
         {open && (
-          <span className="text-xs text-muted-foreground italic px-2">{motivationalPhrase}</span>
+          <span className="text-sm font-medium text-muted-foreground italic px-2">{motivationalPhrase}</span>
         )}
         <SidebarTrigger className="ml-auto" />
       </div>

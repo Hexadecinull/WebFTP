@@ -433,14 +433,9 @@ export const Settings = ({ onClose }: SettingsProps) => {
                     </div>
                     
                     <div className="p-4 border border-border rounded-lg">
-                      <Label className="text-base font-semibold">License</Label>
-                      <p className="text-sm text-muted-foreground mt-1">MIT License</p>
-                    </div>
-
-                    <div className="p-4 border border-border rounded-lg">
                       <Label className="text-base font-semibold">Source Code</Label>
                       <p className="text-sm text-muted-foreground mt-1 mb-3">
-                        This project is open source under MIT License
+                        This project is open source under the MIT License
                       </p>
                       <Button
                         variant="outline"
