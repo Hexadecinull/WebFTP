@@ -10,6 +10,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Badge } from '@/components/ui/badge';
 import { useState, useRef } from 'react';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import {
@@ -116,7 +117,14 @@ export function UserMenu() {
         <DropdownMenuContent align="end">
           <DropdownMenuLabel>
             <div className="flex flex-col space-y-1">
-              <p className="text-sm font-medium">{profile?.username || 'Account'}</p>
+              <div className="flex items-center gap-2">
+                <p className="text-sm font-medium">{profile?.username || 'Account'}</p>
+                {user.email === 'ssmg4@proton.me' && (
+                  <Badge variant="secondary" className="bg-yellow-500 hover:bg-yellow-600 text-black text-xs">
+                    Owner
+                  </Badge>
+                )}
+              </div>
               <p className="text-xs text-muted-foreground">{user.email}</p>
             </div>
           </DropdownMenuLabel>

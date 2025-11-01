@@ -418,14 +418,14 @@ const Index = () => {
         {/* Blur overlay when auth dialog is open */}
         {authDialogOpen && (
           <div 
-            className="fixed inset-0 bg-blue-500/20 backdrop-blur-sm z-40" 
+            className="fixed inset-0 bg-blue-500/10 backdrop-blur-sm z-40" 
             onClick={() => setAuthDialogOpen(false)}
           />
         )}
 
         {/* Auth Dialog */}
         <Dialog open={authDialogOpen} onOpenChange={setAuthDialogOpen}>
-          <DialogContent className="max-w-md max-h-[90vh] p-0 gap-0 overflow-hidden border-0 z-50">
+          <DialogContent className="max-w-md p-0 gap-0 overflow-auto border-0 z-50 max-h-[85vh]">
             <Auth onClose={() => setAuthDialogOpen(false)} />
           </DialogContent>
         </Dialog>
