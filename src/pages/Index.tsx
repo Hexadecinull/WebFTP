@@ -419,7 +419,7 @@ const Index = () => {
         {authDialogOpen && (
           <>
             <div 
-              className="fixed inset-0 bg-blue-500/10 backdrop-blur-sm z-40" 
+              className="fixed inset-0 bg-background/80 backdrop-blur-md z-40" 
               onClick={() => setAuthDialogOpen(false)}
             />
             <div className="fixed inset-0 z-50 flex items-center justify-center p-4 pointer-events-none">
