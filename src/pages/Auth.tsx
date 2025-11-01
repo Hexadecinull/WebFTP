@@ -105,7 +105,7 @@ export default function Auth({ onClose }: { onClose?: () => void }) {
 
   return (
     <div className={`flex items-center justify-center ${!onClose ? 'min-h-screen bg-gradient-to-br from-background via-accent/5 to-background' : ''} p-4`}>
-      <Card className="w-full max-w-lg relative">
+      <Card className="w-full max-w-lg relative min-h-[600px]">
         {onClose && (
           <Button
             variant="ghost"
@@ -116,17 +116,17 @@ export default function Auth({ onClose }: { onClose?: () => void }) {
             <X className="h-4 w-4" />
           </Button>
         )}
-        <CardHeader className="space-y-4 text-center">{/*...keep existing code*/}
+        <CardHeader className="space-y-6 text-center pb-8">
           <div className="flex justify-center">
-            <img src={logo} alt="WebFTP" className="h-16 w-16" />
+            <img src={logo} alt="WebFTP" className="h-20 w-20" />
           </div>
           <div>
-            <CardTitle className="text-2xl">Welcome to WebFTP</CardTitle>
-            <CardDescription>Sign in to your account or create a new one</CardDescription>
+            <CardTitle className="text-3xl">Welcome to WebFTP</CardTitle>
+            <CardDescription className="text-base">Sign in to your account or create a new one</CardDescription>
           </div>
         </CardHeader>
 
-        <CardContent>
+        <CardContent className="px-8">
           <Tabs defaultValue="signin" className="w-full">
             <TabsList className="grid w-full grid-cols-2">
               <TabsTrigger value="signin">Sign In</TabsTrigger>
@@ -134,7 +134,7 @@ export default function Auth({ onClose }: { onClose?: () => void }) {
             </TabsList>
 
             <TabsContent value="signin">
-              <form onSubmit={handleSignIn} className="space-y-4">
+              <form onSubmit={handleSignIn} className="space-y-6">
                 <div className="space-y-2">
                   <Label htmlFor="signin-email">Email</Label>
                   <Input
@@ -208,7 +208,7 @@ export default function Auth({ onClose }: { onClose?: () => void }) {
             </TabsContent>
 
             <TabsContent value="signup">
-              <form onSubmit={handleSignUp} className="space-y-4">
+              <form onSubmit={handleSignUp} className="space-y-6">
                 <div className="space-y-2">
                   <Label htmlFor="signup-email">Email</Label>
                   <Input
@@ -325,7 +325,7 @@ export default function Auth({ onClose }: { onClose?: () => void }) {
           </Tabs>
         </CardContent>
 
-        <CardFooter className="flex flex-col space-y-2 text-center text-sm text-muted-foreground">
+        <CardFooter className="flex flex-col space-y-2 text-center text-base text-muted-foreground pt-8">
           <p>Secure file transfer made easy</p>
         </CardFooter>
       </Card>
