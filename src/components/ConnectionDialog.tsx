@@ -32,7 +32,6 @@ export const ConnectionDialog = ({
   });
   const [ftpSecure, setFtpSecure] = useState(false);
   const [webdavSecure, setWebdavSecure] = useState(true);
-  const [webdavAnonymous, setWebdavAnonymous] = useState(false);
 
   // Update port when protocol or security changes
   useEffect(() => {
@@ -47,12 +46,6 @@ export const ConnectionDialog = ({
     }
   }, [formData.protocol, ftpSecure, webdavSecure]);
 
-  // Set anonymous for WebDAV
-  useEffect(() => {
-    if (formData.protocol === 'webdav' && webdavAnonymous) {
-      setFormData(prev => ({ ...prev, username: 'anonymous', password: '' }));
-    }
-  }, [webdavAnonymous, formData.protocol]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -164,7 +157,7 @@ export const ConnectionDialog = ({
               <Label htmlFor="host">Host / Share Path</Label>
               <Input
                 id="host"
-                placeholder="\\\\server\\share"
+                placeholder="//server/share"
                 value={formData.host}
                 onChange={(e) => setFormData(prev => ({ ...prev, host: e.target.value }))}
                 required
@@ -202,14 +195,6 @@ export const ConnectionDialog = ({
                 onCheckedChange={setWebdavSecure}
               />
             </div>
-            <div className="flex items-center justify-between p-3 border border-border rounded-lg">
-              <Label htmlFor="webdav-anonymous">Anonymous Access</Label>
-              <Switch
-                id="webdav-anonymous"
-                checked={webdavAnonymous}
-                onCheckedChange={setWebdavAnonymous}
-              />
-            </div>
             <div className="grid gap-2">
               <Label htmlFor="host">Host</Label>
               <Input
@@ -230,28 +215,24 @@ export const ConnectionDialog = ({
                 required
               />
             </div>
-            {!webdavAnonymous && (
-              <>
-                <div className="grid gap-2">
-                  <Label htmlFor="username">Username</Label>
-                  <Input
-                    id="username"
-                    value={formData.username}
-                    onChange={(e) => setFormData(prev => ({ ...prev, username: e.target.value }))}
-                    required
-                  />
-                </div>
-                <div className="grid gap-2">
-                  <Label htmlFor="password">Password</Label>
-                  <Input
-                    id="password"
-                    type="password"
-                    value={formData.password}
-                    onChange={(e) => setFormData(prev => ({ ...prev, password: e.target.value }))}
-                  />
-                </div>
-              </>
-            )}
+            <div className="grid gap-2">
+              <Label htmlFor="username">Username</Label>
+              <Input
+                id="username"
+                value={formData.username}
+                onChange={(e) => setFormData(prev => ({ ...prev, username: e.target.value }))}
+                required
+              />
+            </div>
+            <div className="grid gap-2">
+              <Label htmlFor="password">Password</Label>
+              <Input
+                id="password"
+                type="password"
+                value={formData.password}
+                onChange={(e) => setFormData(prev => ({ ...prev, password: e.target.value }))}
+              />
+            </div>
           </>
         );
 
@@ -273,10 +254,7 @@ export const ConnectionDialog = ({
                 type="button"
                 variant="outline"
                 onClick={() => {
-                  onOpenChange(false);
-                  // This will trigger opening saved connections with SMB tab
-                  const event = new CustomEvent('openSavedConnectionsSMB');
-                  window.dispatchEvent(event);
+                  setFormData(prev => ({ ...prev, protocol: 'smb' }));
                 }}
               >
                 Manual Input
