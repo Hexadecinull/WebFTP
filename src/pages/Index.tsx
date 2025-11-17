@@ -75,19 +75,34 @@ const Index = () => {
   const [savedConnectionsOpen, setSavedConnectionsOpen] = useState(false);
   const [authDialogOpen, setAuthDialogOpen] = useState(false);
 
-  // Store recent connections
+  // Get user IP for guest recent connections
+  const [userIP, setUserIP] = useState<string>('');
+  
+  useEffect(() => {
+    // Get user IP for guests
+    if (!user) {
+      fetch('https://api.ipify.org?format=json')
+        .then(res => res.json())
+        .then(data => setUserIP(data.ip))
+        .catch(() => setUserIP('unknown'));
+    }
+  }, [user]);
+
+  // Store recent connections (with IP for guests)
   useEffect(() => {
     if (session) {
-      const recentConnections = JSON.parse(localStorage.getItem('recentConnections') || '[]');
+      const storageKey = user ? 'recentConnections' : `recentConnections_${userIP}`;
+      const recentConnections = JSON.parse(localStorage.getItem(storageKey) || '[]');
       const newConnection = {
         id: Date.now().toString(),
         ...session,
         timestamp: Date.now(),
+        userIP: user ? undefined : userIP,
       };
       const updated = [newConnection, ...recentConnections.filter((c: any) => c.host !== session.host)].slice(0, 10);
-      localStorage.setItem('recentConnections', JSON.stringify(updated));
+      localStorage.setItem(storageKey, JSON.stringify(updated));
     }
-  }, [session]);
+  }, [session, user, userIP]);
 
   // View event handlers
   const handleConnect = useCallback(async (options: ConnectOptions) => {

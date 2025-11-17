@@ -48,12 +48,11 @@ export function AppSidebar({ onNewConnection, onShowBookmarks, onShowSavedConnec
   
   return (
     <Sidebar collapsible="icon" className="border-r border-border">
-      <div className="flex items-center justify-between p-2 border-b border-border">
-        {open && (
-          <span className="text-sm font-medium text-muted-foreground italic px-2">{motivationalPhrase}</span>
-        )}
-        <SidebarTrigger className="ml-auto" />
-      </div>
+      {open && (
+        <div className="p-3 border-b border-border">
+          <span className="text-sm font-medium text-muted-foreground italic">{motivationalPhrase}</span>
+        </div>
+      )}
       <SidebarContent>
         <SidebarGroup>
           <SidebarGroupLabel>Quick Access</SidebarGroupLabel>

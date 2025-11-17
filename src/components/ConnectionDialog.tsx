@@ -451,11 +451,11 @@ export const ConnectionDialog = ({
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="ftp">FTP / FTPS</SelectItem>
-                  <SelectItem value="sftp">SFTP (SSH File Transfer)</SelectItem>
-                  <SelectItem value="smb">SMB (Windows Share)</SelectItem>
-                  <SelectItem value="webdav">WebDAV</SelectItem>
-                  <SelectItem value="local">Local Network</SelectItem>
+                  <SelectItem value="ftp" className="text-foreground">FTP / FTPS</SelectItem>
+                  <SelectItem value="sftp" className="text-foreground">SFTP (SSH File Transfer)</SelectItem>
+                  <SelectItem value="smb" className="text-foreground">SMB (Windows Share)</SelectItem>
+                  <SelectItem value="webdav" className="text-foreground">WebDAV</SelectItem>
+                  <SelectItem value="local" className="text-foreground">Local Network</SelectItem>
                 </SelectContent>
               </Select>
             </div>
