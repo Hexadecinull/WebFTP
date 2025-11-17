@@ -446,6 +446,22 @@ export const Settings = ({ onClose }: SettingsProps) => {
                         View on GitHub
                       </Button>
                     </div>
+                    
+                    <div className="p-4 border border-border rounded-lg">
+                      <Label className="text-base font-semibold">Status</Label>
+                      <p className="text-sm text-muted-foreground mt-1 mb-3">
+                        Repository status badges
+                      </p>
+                      {/* Add your shields.io badges here as img tags. Example:
+                        <img src="https://img.shields.io/github/stars/SSMG4/WebFTP?style=social" alt="GitHub stars" />
+                        <img src="https://img.shields.io/github/issues/SSMG4/WebFTP" alt="GitHub issues" />
+                        <img src="https://img.shields.io/github/forks/SSMG4/WebFTP?style=social" alt="GitHub forks" />
+                        <img src="https://img.shields.io/github/license/SSMG4/WebFTP" alt="License" />
+                      */}
+                      <div className="flex flex-wrap gap-2">
+                        {/* Your badges will appear here */}
+                      </div>
+                    </div>
 
                     {user && (
                       <div className="p-4 border border-destructive/50 rounded-lg bg-destructive/5">

@@ -211,6 +211,7 @@ const Index = () => {
           {/* Header */}
           <div className="h-14 border-b border-border flex items-center justify-between px-4 bg-card">
             <div className="flex items-center gap-4">
+              <SidebarTrigger />
               <img src={logo} alt="WebFTP" className="h-8 w-8" />
               <h1 className="text-lg font-semibold">WebFTP</h1>
               {session && (
@@ -221,7 +222,6 @@ const Index = () => {
             </div>
 
             <div className="flex items-center gap-2">
-              <UserMenu />
               {!user && (
                 <Button
                   variant="default"
@@ -231,6 +231,8 @@ const Index = () => {
                   Sign In
                 </Button>
               )}
+              
+              <UserMenu />
               
               <Button
                 variant="ghost"
@@ -255,16 +257,14 @@ const Index = () => {
                     size="sm"
                     onClick={handleUploadClick}
                   >
-                    <Upload className="h-4 w-4 mr-2" />
-                    Upload
+                    <Upload className="h-4 w-4" />
                   </Button>
                   <Button
                     variant="ghost"
                     size="sm"
                     onClick={handleNewFolder}
                   >
-                    <FolderPlus className="h-4 w-4 mr-2" />
-                    New Folder
+                    <FolderPlus className="h-4 w-4" />
                   </Button>
                   {selectedFile && selectedFile.name !== '..' && (
                     <Button
@@ -272,8 +272,7 @@ const Index = () => {
                       size="sm"
                       onClick={handleDeleteClick}
                     >
-                      <Trash2 className="h-4 w-4 mr-2" />
-                      Delete
+                      <Trash2 className="h-4 w-4" />
                     </Button>
                   )}
                   <Button
@@ -284,15 +283,6 @@ const Index = () => {
                     Disconnect
                   </Button>
                 </>
-              )}
-              {!session && (
-                <Button
-                  variant="default"
-                  size="sm"
-                  onClick={() => setConnectionDialogOpen(true)}
-                >
-                  Connect
-                </Button>
               )}
             </div>
           </div>
