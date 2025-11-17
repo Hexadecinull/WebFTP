@@ -158,7 +158,7 @@ export const Settings = ({ onClose }: SettingsProps) => {
 
   return (
     <div className="fixed inset-0 z-50 bg-background/95 backdrop-blur-sm animate-fade-in">
-      <div className="h-full flex flex-col">
+      <div className="h-full flex flex-col animate-scale-in">
         {/* Header */}
         <div className="h-14 border-b border-border flex items-center justify-between px-4 bg-card">
           <div className="flex items-center gap-3">
@@ -175,19 +175,19 @@ export const Settings = ({ onClose }: SettingsProps) => {
         <ScrollArea className="flex-1 p-6">
           <Tabs defaultValue="appearance" className="w-full max-w-3xl mx-auto">
             <TabsList className="grid w-full grid-cols-5">
-              <TabsTrigger value="appearance">Appearance</TabsTrigger>
-              <TabsTrigger value="connection">Connection</TabsTrigger>
-              <TabsTrigger value="advanced">Advanced</TabsTrigger>
-              <TabsTrigger value="professional" disabled={!user}>
+              <TabsTrigger value="appearance" className="transition-all">Appearance</TabsTrigger>
+              <TabsTrigger value="connection" className="transition-all">Connection</TabsTrigger>
+              <TabsTrigger value="advanced" className="transition-all">Advanced</TabsTrigger>
+              <TabsTrigger value="professional" disabled={!user} className="transition-all">
                 <div className="flex items-center gap-1">
                   Professional
                   {!user && <Lock className="h-3 w-3" />}
                 </div>
               </TabsTrigger>
-              <TabsTrigger value="about">About</TabsTrigger>
+              <TabsTrigger value="about" className="transition-all">About</TabsTrigger>
             </TabsList>
             
-            <TabsContent value="appearance" className="space-y-6 mt-6">
+            <TabsContent value="appearance" className="space-y-6 mt-6 animate-fade-in">
               <div className="space-y-4">
                 <div className="flex items-center justify-between p-4 border border-border rounded-lg">
                   <div className="flex items-center gap-3">
@@ -235,7 +235,7 @@ export const Settings = ({ onClose }: SettingsProps) => {
               </div>
             </TabsContent>
             
-            <TabsContent value="connection" className="space-y-6 mt-6">
+            <TabsContent value="connection" className="space-y-6 mt-6 animate-fade-in">
               <div className="space-y-4">
                 <Label className="text-lg font-semibold">Connection Settings</Label>
                 
@@ -277,7 +277,7 @@ export const Settings = ({ onClose }: SettingsProps) => {
               </div>
             </TabsContent>
             
-            <TabsContent value="advanced" className="space-y-6 mt-6">
+            <TabsContent value="advanced" className="space-y-6 mt-6 animate-fade-in">
               <div className="space-y-4">
                 <Label className="text-lg font-semibold">Advanced Settings</Label>
                 
@@ -325,7 +325,7 @@ export const Settings = ({ onClose }: SettingsProps) => {
               </div>
             </TabsContent>
             
-            <TabsContent value="professional" className="space-y-6 mt-6">
+            <TabsContent value="professional" className="space-y-6 mt-6 animate-fade-in">
               <div className="space-y-4">
                 <Label className="text-lg font-semibold">Professional Settings</Label>
                 
@@ -379,7 +379,7 @@ export const Settings = ({ onClose }: SettingsProps) => {
               </div>
             </TabsContent>
             
-            <TabsContent value="about" className="space-y-6 mt-6">
+            <TabsContent value="about" className="space-y-6 mt-6 animate-fade-in">
               <div className="space-y-4">
                 <div className="text-center space-y-4 py-6">
                   <div className="flex justify-center">

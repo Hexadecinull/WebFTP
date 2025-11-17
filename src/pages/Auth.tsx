@@ -104,8 +104,8 @@ export default function Auth({ onClose }: { onClose?: () => void }) {
   };
 
   return (
-    <div className={`flex items-center justify-center ${!onClose ? 'min-h-screen bg-gradient-to-br from-background via-accent/5 to-background' : ''} p-4`}>
-      <Card className="w-full max-w-5xl relative">
+    <div className={`flex items-center justify-center ${!onClose ? 'min-h-screen bg-gradient-to-br from-background via-accent/5 to-background' : ''} p-4 animate-fade-in`}>
+      <Card className="w-full max-w-5xl relative animate-scale-in">
         {onClose && (
           <Button
             variant="ghost"
