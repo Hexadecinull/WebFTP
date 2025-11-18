@@ -36,6 +36,8 @@ export default function Auth({ onClose }: { onClose?: () => void }) {
   const [showSigninPassword, setShowSigninPassword] = useState(false);
   const [showSignupPassword, setShowSignupPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [signInError, setSignInError] = useState('');
+  const [signUpError, setSignUpError] = useState('');
   const { signIn, signUp, session } = useAuth();
   const navigate = useNavigate();
 
@@ -53,6 +55,7 @@ export default function Auth({ onClose }: { onClose?: () => void }) {
   const handleSignIn = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setIsLoading(true);
+    setSignInError('');
 
     const formData = new FormData(e.currentTarget);
     const email = formData.get('email') as string;
@@ -63,23 +66,28 @@ export default function Auth({ onClose }: { onClose?: () => void }) {
       emailSchema.parse(email);
       passwordSchema.parse(password);
     } catch (error) {
+      setSignInError('Please enter a valid email and password (min 8 characters).');
       setIsLoading(false);
       return;
     }
 
     const { error } = await signIn(email, password);
     
-    if (!error) {
+    if (error) {
+      setSignInError('Incorrect user credentials, please try again.');
+      // Clear password field
+      (e.currentTarget.querySelector('#signin-password') as HTMLInputElement).value = '';
+      setIsLoading(false);
+    } else {
       if (onClose) onClose();
       else navigate('/');
     }
-    
-    setIsLoading(false);
   };
 
   const handleSignUp = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setIsLoading(true);
+    setSignUpError('');
 
     const formData = new FormData(e.currentTarget);
     const email = formData.get('email') as string;
@@ -95,12 +103,24 @@ export default function Auth({ onClose }: { onClose?: () => void }) {
         throw new Error('Passwords do not match');
       }
     } catch (error) {
+      if (error instanceof Error) {
+        setSignUpError(error.message);
+      } else if (error instanceof z.ZodError) {
+        setSignUpError('Please enter a valid email and ensure password is at least 8 characters.');
+      } else {
+        setSignUpError('Please check your input and try again.');
+      }
       setIsLoading(false);
       return;
     }
 
-    await signUp(email, password);
-    setIsLoading(false);
+    const { error } = await signUp(email, password);
+    if (error) {
+      setSignUpError(error.message || 'An error occurred during sign up. Please try again.');
+      setIsLoading(false);
+    } else {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -170,6 +190,9 @@ export default function Auth({ onClose }: { onClose?: () => void }) {
                       )}
                     </button>
                   </div>
+                  {signInError && (
+                    <p className="text-xs text-destructive animate-fade-in">{signInError}</p>
+                  )}
                 </div>
                 
                 <Dialog open={forgotPasswordOpen} onOpenChange={setForgotPasswordOpen}>
@@ -219,6 +242,9 @@ export default function Auth({ onClose }: { onClose?: () => void }) {
                     required
                     disabled={isLoading}
                   />
+                  {signUpError && !signupPassword && (
+                    <p className="text-xs text-destructive animate-fade-in">{signUpError}</p>
+                  )}
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="signup-password">Password</Label>
@@ -312,6 +338,9 @@ export default function Auth({ onClose }: { onClose?: () => void }) {
                       </button>
                     </div>
                   </div>
+                  {signUpError && signupPassword && (
+                    <p className="text-xs text-destructive animate-fade-in">{signUpError}</p>
+                  )}
                 </div>
                 <Button type="submit" className="w-full" disabled={isLoading}>
                   {isLoading ? 'Creating account...' : 'Sign Up'}
