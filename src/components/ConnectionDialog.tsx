@@ -57,6 +57,14 @@ export const ConnectionDialog = ({
     }
   }, [formData.protocol, webdavSecure]);
 
+  // Auto-retract More sections when protocol changes
+  useEffect(() => {
+    setShowFtpMore(false);
+    setShowSftpMore(false);
+    setShowSmbMore(false);
+    setShowWebdavMore(false);
+  }, [formData.protocol]);
+
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();

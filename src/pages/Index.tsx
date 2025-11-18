@@ -226,7 +226,6 @@ const Index = () => {
           {/* Header */}
           <div className="h-14 border-b border-border flex items-center justify-between px-4 bg-card">
             <div className="flex items-center gap-4">
-              <SidebarTrigger />
               <img src={logo} alt="WebFTP" className="h-8 w-8" />
               <h1 className="text-lg font-semibold">WebFTP</h1>
               {session && (
