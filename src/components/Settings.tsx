@@ -41,7 +41,6 @@ const themePresets = [
   { name: 'Emerald', primary: '160 84% 39%', accent: '152 40% 96.1%' },
   { name: 'Rose', primary: '350 89% 60%', accent: '350 40% 96.1%' },
   { name: 'Violet', primary: '258 90% 66%', accent: '258 40% 96.1%' },
-  { name: 'Lime', primary: '84 81% 44%', accent: '84 40% 96.1%' },
   { name: 'Sky', primary: '199 89% 48%', accent: '199 40% 96.1%' },
   { name: 'Fuchsia', primary: '292 84% 61%', accent: '292 40% 96.1%' },
 ];
@@ -91,6 +90,14 @@ export const Settings = ({ onClose }: SettingsProps) => {
     }
   }, []);
 
+  // Reapply Material You theming when theme mode changes
+  useEffect(() => {
+    const primaryHsl = getComputedStyle(document.documentElement).getPropertyValue('--primary').trim();
+    if (primaryHsl) {
+      applyMaterialYouTheming(primaryHsl);
+    }
+  }, [theme]);
+
   // System theme detection
   useEffect(() => {
     if (useSystemTheme) {
@@ -117,9 +124,24 @@ export const Settings = ({ onClose }: SettingsProps) => {
     }
   }, [useSystemTheme, theme, toggleTheme]);
 
+  const applyMaterialYouTheming = (primaryHsl: string) => {
+    const [h, s, l] = primaryHsl.split(' ').map(v => parseFloat(v));
+    const isDark = theme === 'dark';
+    
+    // Apply subtle theme color hints to backgrounds
+    if (isDark) {
+      document.documentElement.style.setProperty('--background', `${h} ${Math.min(s * 0.2, 20)}% 10%`);
+      document.documentElement.style.setProperty('--card', `${h} ${Math.min(s * 0.2, 18)}% 14%`);
+    } else {
+      document.documentElement.style.setProperty('--background', `${h} ${Math.min(s * 0.15, 18)}% 97%`);
+      document.documentElement.style.setProperty('--card', `${h} 0% 100%`);
+    }
+  };
+
   const applyTheme = (themePreset: typeof themePresets[0]) => {
     document.documentElement.style.setProperty('--primary', themePreset.primary);
     document.documentElement.style.setProperty('--accent', themePreset.accent);
+    applyMaterialYouTheming(themePreset.primary);
     setSelectedTheme(themePreset);
     localStorage.setItem('selectedThemeName', themePreset.name);
     toast({
@@ -152,11 +174,20 @@ export const Settings = ({ onClose }: SettingsProps) => {
 
     const hsl = `${Math.round(h * 360)} ${Math.round(s * 100)}% ${Math.round(l * 100)}%`;
     document.documentElement.style.setProperty('--primary', hsl);
+    applyMaterialYouTheming(hsl);
     localStorage.setItem('customPrimaryColor', hsl);
     toast({
       title: 'Custom Color Applied',
       description: 'Your custom color has been applied',
     });
+  };
+
+  // Calculate if text should be black or white based on background luminance
+  const getProtocolTextColor = () => {
+    const primaryHsl = getComputedStyle(document.documentElement).getPropertyValue('--primary').trim();
+    const [, , l] = primaryHsl.split(' ').map(v => parseFloat(v));
+    // If lightness > 70%, use black text, otherwise white
+    return l > 70 ? 'text-black' : 'text-white';
   };
 
   const handleSystemThemeChange = (checked: boolean) => {
@@ -168,7 +199,7 @@ export const Settings = ({ onClose }: SettingsProps) => {
     setIsClosing(true);
     setTimeout(() => {
       onClose();
-    }, 200);
+    }, 150);
   };
 
   const handleConcurrentTransfersChange = (value: number) => {
@@ -544,12 +575,12 @@ export const Settings = ({ onClose }: SettingsProps) => {
                     <div className="p-4 border border-border rounded-lg">
                       <Label className="text-base font-semibold">Supported Protocols</Label>
                       <div className="flex flex-wrap gap-2 mt-2">
-                        <span className="px-2 py-1 bg-primary text-white rounded text-xs font-medium">FTP</span>
-                        <span className="px-2 py-1 bg-primary text-white rounded text-xs font-medium">FTPS</span>
-                        <span className="px-2 py-1 bg-primary text-white rounded text-xs font-medium">SFTP</span>
-                        <span className="px-2 py-1 bg-primary text-white rounded text-xs font-medium">SMB</span>
-                        <span className="px-2 py-1 bg-primary text-white rounded text-xs font-medium">WebDAV</span>
-                        <span className="px-2 py-1 bg-primary text-white rounded text-xs font-medium">Local Network</span>
+                        <span className={`px-2 py-1 bg-primary rounded text-xs font-medium ${getProtocolTextColor()}`}>FTP</span>
+                        <span className={`px-2 py-1 bg-primary rounded text-xs font-medium ${getProtocolTextColor()}`}>FTPS</span>
+                        <span className={`px-2 py-1 bg-primary rounded text-xs font-medium ${getProtocolTextColor()}`}>SFTP</span>
+                        <span className={`px-2 py-1 bg-primary rounded text-xs font-medium ${getProtocolTextColor()}`}>SMB</span>
+                        <span className={`px-2 py-1 bg-primary rounded text-xs font-medium ${getProtocolTextColor()}`}>WebDAV</span>
+                        <span className={`px-2 py-1 bg-primary rounded text-xs font-medium ${getProtocolTextColor()}`}>Local Network</span>
                       </div>
                     </div>
                     

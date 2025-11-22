@@ -54,7 +54,7 @@ export default function Auth({ onClose }: { onClose?: () => void }) {
       setIsClosing(true);
       setTimeout(() => {
         onClose();
-      }, 200);
+      }, 150);
     }
   };
 
@@ -164,7 +164,7 @@ export default function Auth({ onClose }: { onClose?: () => void }) {
             </TabsList>
 
             <TabsContent value="signin">
-              <form onSubmit={handleSignIn} className="space-y-4">
+              <form onSubmit={handleSignIn} className="space-y-4 min-h-[440px] flex flex-col">
                 <div className="space-y-2">
                   <Label htmlFor="signin-email">Email</Label>
                   <Input
@@ -233,6 +233,8 @@ export default function Auth({ onClose }: { onClose?: () => void }) {
                     </div>
                   </DialogContent>
                 </Dialog>
+
+                <div className="flex-1" />
 
                 <Button type="submit" className="w-full" disabled={isLoading}>
                   {isLoading ? 'Signing in...' : 'Sign In'}
