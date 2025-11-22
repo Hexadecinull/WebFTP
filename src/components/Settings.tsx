@@ -28,16 +28,22 @@ interface SettingsProps {
 }
 
 const themePresets = [
-  { name: 'Default Blue', primary: '221.2 83.2% 53.3%', accent: '210 40% 96.1%' },
+  { name: 'Default Blue', primary: '200 95% 45%', accent: '180 75% 50%' },
   { name: 'Purple', primary: '262.1 83.3% 57.8%', accent: '270 40% 96.1%' },
   { name: 'Green', primary: '142.1 76.2% 36.3%', accent: '138 40% 96.1%' },
-  { name: 'Red', primary: '346.8 77.2% 49.8%', accent: '0 40% 96.1%' },
+  { name: 'Red', primary: '0 84% 60%', accent: '0 40% 96.1%' },
   { name: 'Orange', primary: '24.6 95% 53.1%', accent: '33 40% 96.1%' },
   { name: 'Teal', primary: '173.4 80.4% 40%', accent: '180 40% 96.1%' },
   { name: 'Pink', primary: '330.4 81.2% 60.4%', accent: '336 40% 96.1%' },
   { name: 'Cyan', primary: '188.7 94.5% 42.7%', accent: '197 40% 96.1%' },
   { name: 'Indigo', primary: '238.7 83.5% 66.7%', accent: '240 40% 96.1%' },
   { name: 'Amber', primary: '45.4 93.4% 47.5%', accent: '48 40% 96.1%' },
+  { name: 'Emerald', primary: '160 84% 39%', accent: '152 40% 96.1%' },
+  { name: 'Rose', primary: '350 89% 60%', accent: '350 40% 96.1%' },
+  { name: 'Violet', primary: '258 90% 66%', accent: '258 40% 96.1%' },
+  { name: 'Lime', primary: '84 81% 44%', accent: '84 40% 96.1%' },
+  { name: 'Sky', primary: '199 89% 48%', accent: '199 40% 96.1%' },
+  { name: 'Fuchsia', primary: '292 84% 61%', accent: '292 40% 96.1%' },
 ];
 
 export const Settings = ({ onClose }: SettingsProps) => {
@@ -70,6 +76,12 @@ export const Settings = ({ onClose }: SettingsProps) => {
     return localStorage.getItem('usePassiveMode') !== 'false';
   });
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [customColor, setCustomColor] = useState('#0ea5e9');
+  const [showColorPicker, setShowColorPicker] = useState(false);
+  const [useSystemTheme, setUseSystemTheme] = useState(() => {
+    return localStorage.getItem('useSystemTheme') !== 'false';
+  });
+  const [isClosing, setIsClosing] = useState(false);
 
   useEffect(() => {
     const currentPrimary = getComputedStyle(document.documentElement).getPropertyValue('--primary').trim();
@@ -78,6 +90,32 @@ export const Settings = ({ onClose }: SettingsProps) => {
       setSelectedTheme(current);
     }
   }, []);
+
+  // System theme detection
+  useEffect(() => {
+    if (useSystemTheme) {
+      const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
+      const handleChange = (e: MediaQueryListEvent) => {
+        if (useSystemTheme) {
+          if (e.matches && theme !== 'dark') {
+            toggleTheme();
+          } else if (!e.matches && theme !== 'light') {
+            toggleTheme();
+          }
+        }
+      };
+      
+      // Set initial theme based on system preference
+      if (mediaQuery.matches && theme !== 'dark') {
+        toggleTheme();
+      } else if (!mediaQuery.matches && theme !== 'light') {
+        toggleTheme();
+      }
+      
+      mediaQuery.addEventListener('change', handleChange);
+      return () => mediaQuery.removeEventListener('change', handleChange);
+    }
+  }, [useSystemTheme, theme, toggleTheme]);
 
   const applyTheme = (themePreset: typeof themePresets[0]) => {
     document.documentElement.style.setProperty('--primary', themePreset.primary);
@@ -88,6 +126,49 @@ export const Settings = ({ onClose }: SettingsProps) => {
       title: 'Theme Applied',
       description: `${themePreset.name} theme has been applied`,
     });
+  };
+
+  const applyCustomColor = (hexColor: string) => {
+    // Convert hex to HSL
+    const hex = hexColor.replace('#', '');
+    const r = parseInt(hex.substring(0, 2), 16) / 255;
+    const g = parseInt(hex.substring(2, 4), 16) / 255;
+    const b = parseInt(hex.substring(4, 6), 16) / 255;
+
+    const max = Math.max(r, g, b);
+    const min = Math.min(r, g, b);
+    let h = 0, s = 0, l = (max + min) / 2;
+
+    if (max !== min) {
+      const d = max - min;
+      s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
+      
+      switch (max) {
+        case r: h = ((g - b) / d + (g < b ? 6 : 0)) / 6; break;
+        case g: h = ((b - r) / d + 2) / 6; break;
+        case b: h = ((r - g) / d + 4) / 6; break;
+      }
+    }
+
+    const hsl = `${Math.round(h * 360)} ${Math.round(s * 100)}% ${Math.round(l * 100)}%`;
+    document.documentElement.style.setProperty('--primary', hsl);
+    localStorage.setItem('customPrimaryColor', hsl);
+    toast({
+      title: 'Custom Color Applied',
+      description: 'Your custom color has been applied',
+    });
+  };
+
+  const handleSystemThemeChange = (checked: boolean) => {
+    setUseSystemTheme(checked);
+    localStorage.setItem('useSystemTheme', checked.toString());
+  };
+
+  const handleClose = () => {
+    setIsClosing(true);
+    setTimeout(() => {
+      onClose();
+    }, 200);
   };
 
   const handleConcurrentTransfersChange = (value: number) => {
@@ -157,8 +238,8 @@ export const Settings = ({ onClose }: SettingsProps) => {
   };
 
   return (
-    <div className="fixed inset-0 z-50 bg-background/95 backdrop-blur-sm animate-fade-in">
-      <div className="h-full flex flex-col animate-scale-in">
+    <div className={`fixed inset-0 z-50 bg-background/95 backdrop-blur-sm ${isClosing ? 'animate-fade-out' : 'animate-fade-in'}`}>
+      <div className={`h-full flex flex-col ${isClosing ? 'animate-scale-out' : 'animate-scale-in'}`}>
         {/* Header */}
         <div className="h-14 border-b border-border flex items-center justify-between px-4 bg-card">
           <div className="flex items-center gap-3">
@@ -166,7 +247,7 @@ export const Settings = ({ onClose }: SettingsProps) => {
             <h2 className="text-lg font-semibold">Settings</h2>
           </div>
           
-          <Button variant="ghost" size="sm" onClick={onClose}>
+          <Button variant="ghost" size="sm" onClick={handleClose}>
             <X className="h-4 w-4" />
           </Button>
         </div>
@@ -193,11 +274,22 @@ export const Settings = ({ onClose }: SettingsProps) => {
                   <div className="flex items-center gap-3">
                     {theme === 'dark' ? <Moon className="h-5 w-5" /> : <Sun className="h-5 w-5" />}
                     <div>
+                      <Label className="text-base font-semibold">System Theme</Label>
+                      <p className="text-sm text-muted-foreground">Automatically match your system theme</p>
+                    </div>
+                  </div>
+                  <Switch checked={useSystemTheme} onCheckedChange={handleSystemThemeChange} />
+                </div>
+
+                <div className="flex items-center justify-between p-4 border border-border rounded-lg">
+                  <div className="flex items-center gap-3">
+                    {theme === 'dark' ? <Moon className="h-5 w-5" /> : <Sun className="h-5 w-5" />}
+                    <div>
                       <Label className="text-base font-semibold">Dark Mode</Label>
                       <p className="text-sm text-muted-foreground">Toggle between light and dark theme</p>
                     </div>
                   </div>
-                  <Switch checked={theme === 'dark'} onCheckedChange={toggleTheme} />
+                  <Switch checked={theme === 'dark'} onCheckedChange={toggleTheme} disabled={useSystemTheme} />
                 </div>
 
                 <div className="flex items-center gap-2 mt-6">
@@ -231,6 +323,44 @@ export const Settings = ({ onClose }: SettingsProps) => {
                       </button>
                     );
                   })}
+                </div>
+
+                <div className="mt-4">
+                  <Button
+                    variant="outline"
+                    className="w-full"
+                    onClick={() => setShowColorPicker(!showColorPicker)}
+                  >
+                    <Palette className="h-4 w-4 mr-2" />
+                    {showColorPicker ? 'Hide' : 'Show'} Custom Color Picker
+                  </Button>
+
+                  {showColorPicker && (
+                    <div className="mt-4 p-4 border border-border rounded-lg space-y-4 animate-fade-in">
+                      <Label className="text-base font-semibold">Custom Color</Label>
+                      <p className="text-sm text-muted-foreground">Choose any color or enter a hex code</p>
+                      
+                      <div className="flex gap-2">
+                        <Input
+                          type="color"
+                          value={customColor}
+                          onChange={(e) => setCustomColor(e.target.value)}
+                          className="w-20 h-10 p-1 cursor-pointer"
+                        />
+                        <Input
+                          type="text"
+                          value={customColor}
+                          onChange={(e) => setCustomColor(e.target.value)}
+                          placeholder="#0ea5e9"
+                          className="flex-1"
+                          pattern="^#[0-9A-Fa-f]{6}$"
+                        />
+                        <Button onClick={() => applyCustomColor(customColor)}>
+                          Apply
+                        </Button>
+                      </div>
+                    </div>
+                  )}
                 </div>
               </div>
             </TabsContent>
@@ -414,12 +544,12 @@ export const Settings = ({ onClose }: SettingsProps) => {
                     <div className="p-4 border border-border rounded-lg">
                       <Label className="text-base font-semibold">Supported Protocols</Label>
                       <div className="flex flex-wrap gap-2 mt-2">
-                        <span className="px-2 py-1 bg-accent text-accent-foreground rounded text-xs">FTP</span>
-                        <span className="px-2 py-1 bg-accent text-accent-foreground rounded text-xs">FTPS</span>
-                        <span className="px-2 py-1 bg-accent text-accent-foreground rounded text-xs">SFTP</span>
-                        <span className="px-2 py-1 bg-accent text-accent-foreground rounded text-xs">SMB</span>
-                        <span className="px-2 py-1 bg-accent text-accent-foreground rounded text-xs">WebDAV</span>
-                        <span className="px-2 py-1 bg-accent text-accent-foreground rounded text-xs">Local Network</span>
+                        <span className="px-2 py-1 bg-primary text-white rounded text-xs font-medium">FTP</span>
+                        <span className="px-2 py-1 bg-primary text-white rounded text-xs font-medium">FTPS</span>
+                        <span className="px-2 py-1 bg-primary text-white rounded text-xs font-medium">SFTP</span>
+                        <span className="px-2 py-1 bg-primary text-white rounded text-xs font-medium">SMB</span>
+                        <span className="px-2 py-1 bg-primary text-white rounded text-xs font-medium">WebDAV</span>
+                        <span className="px-2 py-1 bg-primary text-white rounded text-xs font-medium">Local Network</span>
                       </div>
                     </div>
                     
