@@ -52,7 +52,7 @@ export function AppSidebar({ onNewConnection, onShowBookmarks, onShowSavedConnec
         {open && (
           <span className="text-sm font-medium text-muted-foreground italic">{motivationalPhrase}</span>
         )}
-        <SidebarTrigger className={!open ? "mx-auto" : ""} />
+        <SidebarTrigger className={`rounded-md ${!open ? "mx-auto" : ""}`} />
       </div>
       <SidebarContent>
         <SidebarGroup>
