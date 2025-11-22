@@ -65,6 +65,13 @@ export const ConnectionDialog = ({
     setShowWebdavMore(false);
   }, [formData.protocol]);
 
+  // Reset protocol to FTP when dialog opens
+  useEffect(() => {
+    if (open) {
+      setFormData(prev => ({ ...prev, protocol: 'ftp' }));
+    }
+  }, [open]);
+
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -78,7 +85,7 @@ export const ConnectionDialog = ({
           <>
             <div className="space-y-1">
               <div className="flex items-center justify-between p-3 border border-border rounded-lg">
-                <Label htmlFor="ftp-secure">Use FTPS (Secure)</Label>
+                <Label htmlFor="ftp-secure">Use FTPS</Label>
                 <Switch
                   id="ftp-secure"
                   checked={ftpSecure}

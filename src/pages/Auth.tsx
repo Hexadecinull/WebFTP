@@ -38,6 +38,7 @@ export default function Auth({ onClose }: { onClose?: () => void }) {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [signInError, setSignInError] = useState('');
   const [signUpError, setSignUpError] = useState('');
+  const [isClosing, setIsClosing] = useState(false);
   const { signIn, signUp, session } = useAuth();
   const navigate = useNavigate();
 
@@ -47,6 +48,15 @@ export default function Auth({ onClose }: { onClose?: () => void }) {
     else navigate('/');
     return null;
   }
+
+  const handleClose = () => {
+    if (onClose) {
+      setIsClosing(true);
+      setTimeout(() => {
+        onClose();
+      }, 200);
+    }
+  };
 
   const passwordStrength = getPasswordStrength(signupPassword);
   const passwordsMatch = signupPassword === signupConfirmPassword && signupConfirmPassword !== '';
@@ -124,14 +134,14 @@ export default function Auth({ onClose }: { onClose?: () => void }) {
   };
 
   return (
-    <div className={`flex items-center justify-center ${!onClose ? 'min-h-screen bg-gradient-to-br from-background via-accent/5 to-background' : ''} p-4 animate-fade-in`}>
-      <Card className="w-full max-w-5xl relative animate-scale-in">
+    <div className={`flex items-center justify-center ${!onClose ? 'min-h-screen bg-gradient-to-br from-background via-accent/5 to-background' : ''} p-4 ${isClosing ? 'animate-fade-out' : 'animate-fade-in'}`}>
+      <Card className={`w-full max-w-5xl relative ${isClosing ? 'animate-scale-out' : 'animate-scale-in'}`}>
         {onClose && (
           <Button
             variant="ghost"
             size="icon"
             className="absolute top-4 right-4 h-8 w-8"
-            onClick={onClose}
+            onClick={handleClose}
           >
             <X className="h-4 w-4" />
           </Button>
