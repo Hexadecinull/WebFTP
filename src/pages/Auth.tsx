@@ -158,9 +158,9 @@ export default function Auth({ onClose }: { onClose?: () => void }) {
 
         <CardContent>
           <Tabs defaultValue="signin" className="w-full">
-            <TabsList className="grid w-full grid-cols-2">
-              <TabsTrigger value="signin">Sign In</TabsTrigger>
-              <TabsTrigger value="signup">Sign Up</TabsTrigger>
+            <TabsList className="grid w-full grid-cols-2 bg-muted">
+              <TabsTrigger value="signin" className="data-[state=active]:bg-background">Sign In</TabsTrigger>
+              <TabsTrigger value="signup" className="data-[state=active]:bg-background">Sign Up</TabsTrigger>
             </TabsList>
 
             <TabsContent value="signin">
