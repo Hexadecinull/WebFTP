@@ -80,6 +80,12 @@ export const Settings = ({ onClose }: SettingsProps) => {
   const [useSystemTheme, setUseSystemTheme] = useState(() => {
     return localStorage.getItem('useSystemTheme') !== 'false';
   });
+  const [useAmoled, setUseAmoled] = useState(() => {
+    return localStorage.getItem('useAmoled') === 'true';
+  });
+  const [useMaterialYou, setUseMaterialYou] = useState(() => {
+    return localStorage.getItem('useMaterialYou') !== 'false';
+  });
   const [isClosing, setIsClosing] = useState(false);
 
   useEffect(() => {
@@ -90,13 +96,13 @@ export const Settings = ({ onClose }: SettingsProps) => {
     }
   }, []);
 
-  // Reapply Material You theming when theme mode changes
+  // Reapply Material You theming when theme mode, AMOLED, or Material You setting changes
   useEffect(() => {
     const primaryHsl = getComputedStyle(document.documentElement).getPropertyValue('--primary').trim();
     if (primaryHsl) {
       applyMaterialYouTheming(primaryHsl);
     }
-  }, [theme]);
+  }, [theme, useAmoled, useMaterialYou]);
 
   // System theme detection
   useEffect(() => {
@@ -125,16 +131,26 @@ export const Settings = ({ onClose }: SettingsProps) => {
   }, [useSystemTheme, theme, toggleTheme]);
 
   const applyMaterialYouTheming = (primaryHsl: string) => {
+    if (!useMaterialYou) return;
+    
     const [h, s, l] = primaryHsl.split(' ').map(v => parseFloat(v));
     const isDark = theme === 'dark';
     
-    // Apply subtle theme color hints to backgrounds
+    // Apply subtle theme color hints to backgrounds, sidebar, dialogs, and cards
     if (isDark) {
-      document.documentElement.style.setProperty('--background', `${h} ${Math.min(s * 0.2, 20)}% 10%`);
-      document.documentElement.style.setProperty('--card', `${h} ${Math.min(s * 0.2, 18)}% 14%`);
+      const bgLightness = useAmoled ? 0 : 10;
+      document.documentElement.style.setProperty('--background', `${h} ${Math.min(s * 0.2, 20)}% ${bgLightness}%`);
+      document.documentElement.style.setProperty('--card', `${h} ${Math.min(s * 0.2, 18)}% ${Math.min(bgLightness + 4, 14)}%`);
+      document.documentElement.style.setProperty('--popover', `${h} ${Math.min(s * 0.2, 18)}% ${Math.min(bgLightness + 4, 14)}%`);
+      document.documentElement.style.setProperty('--sidebar-background', `${h} ${Math.min(s * 0.15, 20)}% ${Math.min(bgLightness + 2, 12)}%`);
+      document.documentElement.style.setProperty('--sidebar-accent', `${h} ${Math.min(s * 0.2, 18)}% ${Math.min(bgLightness + 8, 18)}%`);
     } else {
-      document.documentElement.style.setProperty('--background', `${h} ${Math.min(s * 0.15, 18)}% 97%`);
-      document.documentElement.style.setProperty('--card', `${h} 0% 100%`);
+      // Light mode - subtle tint
+      document.documentElement.style.setProperty('--background', `${h} ${Math.min(s * 0.1, 15)}% 98%`);
+      document.documentElement.style.setProperty('--card', `${h} ${Math.min(s * 0.05, 5)}% 100%`);
+      document.documentElement.style.setProperty('--popover', `${h} ${Math.min(s * 0.05, 5)}% 100%`);
+      document.documentElement.style.setProperty('--sidebar-background', `${h} ${Math.min(s * 0.1, 18)}% 99%`);
+      document.documentElement.style.setProperty('--sidebar-accent', `${h} ${Math.min(s * 0.15, 20)}% 96%`);
     }
   };
 
@@ -172,7 +188,13 @@ export const Settings = ({ onClose }: SettingsProps) => {
       }
     }
 
-    const hsl = `${Math.round(h * 360)} ${Math.round(s * 100)}% ${Math.round(l * 100)}%`;
+    // Avoid pure black (#000000) - use very dark gray instead
+    let adjustedL = Math.round(l * 100);
+    if (adjustedL === 0 && Math.round(s * 100) === 0) {
+      adjustedL = 15; // Use very dark gray instead of pure black
+    }
+
+    const hsl = `${Math.round(h * 360)} ${Math.round(s * 100)}% ${adjustedL}%`;
     document.documentElement.style.setProperty('--primary', hsl);
     applyMaterialYouTheming(hsl);
     localStorage.setItem('customPrimaryColor', hsl);
@@ -193,6 +215,44 @@ export const Settings = ({ onClose }: SettingsProps) => {
   const handleSystemThemeChange = (checked: boolean) => {
     setUseSystemTheme(checked);
     localStorage.setItem('useSystemTheme', checked.toString());
+  };
+
+  const handleAmoledChange = (checked: boolean) => {
+    setUseAmoled(checked);
+    localStorage.setItem('useAmoled', checked.toString());
+    // Reapply Material You theming with new AMOLED setting
+    const primaryHsl = getComputedStyle(document.documentElement).getPropertyValue('--primary').trim();
+    if (primaryHsl) {
+      applyMaterialYouTheming(primaryHsl);
+    }
+  };
+
+  const handleMaterialYouChange = (checked: boolean) => {
+    setUseMaterialYou(checked);
+    localStorage.setItem('useMaterialYou', checked.toString());
+    
+    if (!checked) {
+      // Reset to default values from index.css
+      if (theme === 'dark') {
+        document.documentElement.style.setProperty('--background', '220 20% 10%');
+        document.documentElement.style.setProperty('--card', '220 18% 14%');
+        document.documentElement.style.setProperty('--popover', '220 18% 14%');
+        document.documentElement.style.setProperty('--sidebar-background', '220 20% 12%');
+        document.documentElement.style.setProperty('--sidebar-accent', '220 18% 18%');
+      } else {
+        document.documentElement.style.setProperty('--background', '220 18% 97%');
+        document.documentElement.style.setProperty('--card', '0 0% 100%');
+        document.documentElement.style.setProperty('--popover', '0 0% 100%');
+        document.documentElement.style.setProperty('--sidebar-background', '220 18% 99%');
+        document.documentElement.style.setProperty('--sidebar-accent', '200 80% 96%');
+      }
+    } else {
+      // Reapply Material You theming
+      const primaryHsl = getComputedStyle(document.documentElement).getPropertyValue('--primary').trim();
+      if (primaryHsl) {
+        applyMaterialYouTheming(primaryHsl);
+      }
+    }
   };
 
   const handleClose = () => {
@@ -321,6 +381,28 @@ export const Settings = ({ onClose }: SettingsProps) => {
                     </div>
                   </div>
                   <Switch checked={theme === 'dark'} onCheckedChange={toggleTheme} disabled={useSystemTheme} />
+                </div>
+
+                <div className="flex items-center justify-between p-4 border border-border rounded-lg">
+                  <div className="flex items-center gap-3">
+                    <Moon className="h-5 w-5" />
+                    <div>
+                      <Label className="text-base font-semibold">AMOLED (Pure Black)</Label>
+                      <p className="text-sm text-muted-foreground">Use pure black backgrounds in dark mode</p>
+                    </div>
+                  </div>
+                  <Switch checked={useAmoled} onCheckedChange={handleAmoledChange} disabled={theme !== 'dark'} />
+                </div>
+
+                <div className="flex items-center justify-between p-4 border border-border rounded-lg">
+                  <div className="flex items-center gap-3">
+                    <Palette className="h-5 w-5" />
+                    <div>
+                      <Label className="text-base font-semibold">Material You Theming</Label>
+                      <p className="text-sm text-muted-foreground">Apply dynamic color hints from your theme</p>
+                    </div>
+                  </div>
+                  <Switch checked={useMaterialYou} onCheckedChange={handleMaterialYouChange} />
                 </div>
 
                 <div className="flex items-center gap-2 mt-6">
