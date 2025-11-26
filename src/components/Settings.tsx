@@ -136,7 +136,7 @@ export const Settings = ({ onClose }: SettingsProps) => {
     const [h, s, l] = primaryHsl.split(' ').map(v => parseFloat(v));
     const isDark = theme === 'dark';
     
-    // Apply subtle theme color hints to backgrounds, sidebar, dialogs, and cards
+    // Apply subtle theme color hints to backgrounds, sidebar, dialogs, tabs, and cards
     if (isDark) {
       const bgLightness = useAmoled ? 0 : 10;
       document.documentElement.style.setProperty('--background', `${h} ${Math.min(s * 0.2, 20)}% ${bgLightness}%`);
@@ -144,13 +144,15 @@ export const Settings = ({ onClose }: SettingsProps) => {
       document.documentElement.style.setProperty('--popover', `${h} ${Math.min(s * 0.2, 18)}% ${Math.min(bgLightness + 4, 14)}%`);
       document.documentElement.style.setProperty('--sidebar-background', `${h} ${Math.min(s * 0.15, 20)}% ${Math.min(bgLightness + 2, 12)}%`);
       document.documentElement.style.setProperty('--sidebar-accent', `${h} ${Math.min(s * 0.2, 18)}% ${Math.min(bgLightness + 8, 18)}%`);
+      document.documentElement.style.setProperty('--muted', `${h} ${Math.min(s * 0.15, 20)}% ${Math.min(bgLightness + 5, 15)}%`);
     } else {
-      // Light mode - subtle tint
-      document.documentElement.style.setProperty('--background', `${h} ${Math.min(s * 0.1, 15)}% 98%`);
-      document.documentElement.style.setProperty('--card', `${h} ${Math.min(s * 0.05, 5)}% 100%`);
-      document.documentElement.style.setProperty('--popover', `${h} ${Math.min(s * 0.05, 5)}% 100%`);
-      document.documentElement.style.setProperty('--sidebar-background', `${h} ${Math.min(s * 0.1, 18)}% 99%`);
-      document.documentElement.style.setProperty('--sidebar-accent', `${h} ${Math.min(s * 0.15, 20)}% 96%`);
+      // Light mode - more visible subtle tint with better contrast
+      document.documentElement.style.setProperty('--background', `${h} ${Math.min(s * 0.15, 20)}% 97%`);
+      document.documentElement.style.setProperty('--card', `${h} ${Math.min(s * 0.1, 10)}% 99%`);
+      document.documentElement.style.setProperty('--popover', `${h} ${Math.min(s * 0.1, 10)}% 99%`);
+      document.documentElement.style.setProperty('--sidebar-background', `${h} ${Math.min(s * 0.15, 25)}% 98%`);
+      document.documentElement.style.setProperty('--sidebar-accent', `${h} ${Math.min(s * 0.2, 30)}% 94%`);
+      document.documentElement.style.setProperty('--muted', `${h} ${Math.min(s * 0.2, 25)}% 94%`);
     }
   };
 
@@ -220,10 +222,27 @@ export const Settings = ({ onClose }: SettingsProps) => {
   const handleAmoledChange = (checked: boolean) => {
     setUseAmoled(checked);
     localStorage.setItem('useAmoled', checked.toString());
-    // Reapply Material You theming with new AMOLED setting
-    const primaryHsl = getComputedStyle(document.documentElement).getPropertyValue('--primary').trim();
-    if (primaryHsl) {
-      applyMaterialYouTheming(primaryHsl);
+    
+    if (checked && theme === 'dark') {
+      // Apply pure black immediately
+      document.documentElement.style.setProperty('--background', '0 0% 0%');
+      document.documentElement.style.setProperty('--card', '0 0% 4%');
+      document.documentElement.style.setProperty('--popover', '0 0% 4%');
+      document.documentElement.style.setProperty('--sidebar-background', '0 0% 2%');
+      document.documentElement.style.setProperty('--sidebar-accent', '0 0% 8%');
+    } else {
+      // Reapply Material You or default theming
+      const primaryHsl = getComputedStyle(document.documentElement).getPropertyValue('--primary').trim();
+      if (primaryHsl && useMaterialYou) {
+        applyMaterialYouTheming(primaryHsl);
+      } else if (theme === 'dark') {
+        // Reset to default dark values
+        document.documentElement.style.setProperty('--background', '220 20% 10%');
+        document.documentElement.style.setProperty('--card', '220 18% 14%');
+        document.documentElement.style.setProperty('--popover', '220 18% 14%');
+        document.documentElement.style.setProperty('--sidebar-background', '220 20% 12%');
+        document.documentElement.style.setProperty('--sidebar-accent', '220 18% 18%');
+      }
     }
   };
 
@@ -346,17 +365,17 @@ export const Settings = ({ onClose }: SettingsProps) => {
         {/* Content */}
         <ScrollArea className="flex-1 p-6">
           <Tabs defaultValue="appearance" className="w-full max-w-3xl mx-auto">
-            <TabsList className="grid w-full grid-cols-5">
-              <TabsTrigger value="appearance" className="transition-all">Appearance</TabsTrigger>
-              <TabsTrigger value="connection" className="transition-all">Connection</TabsTrigger>
-              <TabsTrigger value="advanced" className="transition-all">Advanced</TabsTrigger>
-              <TabsTrigger value="professional" disabled={!user} className="transition-all">
+            <TabsList className="grid w-full grid-cols-5 bg-muted">
+              <TabsTrigger value="appearance" className="transition-all data-[state=active]:bg-background">Appearance</TabsTrigger>
+              <TabsTrigger value="connection" className="transition-all data-[state=active]:bg-background">Connection</TabsTrigger>
+              <TabsTrigger value="advanced" className="transition-all data-[state=active]:bg-background">Advanced</TabsTrigger>
+              <TabsTrigger value="professional" disabled={!user} className="transition-all data-[state=active]:bg-background">
                 <div className="flex items-center gap-1">
                   Professional
                   {!user && <Lock className="h-3 w-3" />}
                 </div>
               </TabsTrigger>
-              <TabsTrigger value="about" className="transition-all">About</TabsTrigger>
+              <TabsTrigger value="about" className="transition-all data-[state=active]:bg-background">About</TabsTrigger>
             </TabsList>
             
             <TabsContent value="appearance" className="space-y-6 mt-6 animate-fade-in">
@@ -682,7 +701,7 @@ export const Settings = ({ onClose }: SettingsProps) => {
                       </p>
                       <Button
                         variant="outline"
-                        className="w-full hover:bg-accent hover:text-accent-foreground"
+                        className="w-full hover:bg-accent hover:text-foreground"
                         onClick={() => window.open('https://github.com/SSMG4/WebFTP', '_blank')}
                       >
                         <Github className="h-4 w-4 mr-2" />
