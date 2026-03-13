@@ -641,6 +641,39 @@ export const Settings = ({ onClose }: SettingsProps) => {
                     </div>
                     <Switch checked={usePassiveMode} onCheckedChange={handleUsePassiveModeChange} />
                   </div>
+
+                  <div className="flex items-center justify-between p-4 border border-border rounded-lg">
+                    <div>
+                      <Label className="text-base font-semibold">Preserve File Timestamps</Label>
+                      <p className="text-sm text-muted-foreground">Keep original modification dates when transferring</p>
+                    </div>
+                    <Switch defaultChecked={true} />
+                  </div>
+
+                  <div className="flex items-center justify-between p-4 border border-border rounded-lg">
+                    <div>
+                      <Label className="text-base font-semibold">Show Hidden Files</Label>
+                      <p className="text-sm text-muted-foreground">Display dotfiles and hidden directories</p>
+                    </div>
+                    <Switch defaultChecked={false} />
+                  </div>
+
+                  <div className="p-4 border border-border rounded-lg space-y-2">
+                    <Label className="text-base font-semibold">File Overwrite Policy</Label>
+                    <p className="text-sm text-muted-foreground">What to do when a file already exists at the destination</p>
+                    <select className="w-full mt-2 p-2 border border-border rounded-lg bg-background text-foreground">
+                      <option>Ask every time</option>
+                      <option>Always overwrite</option>
+                      <option>Skip existing</option>
+                      <option>Rename with suffix</option>
+                    </select>
+                  </div>
+
+                  <div className="p-4 border border-border rounded-lg space-y-2">
+                    <Label className="text-base font-semibold">Temporary File Directory</Label>
+                    <p className="text-sm text-muted-foreground">Directory for temporary download files</p>
+                    <Input type="text" defaultValue="/tmp" className="mt-2" />
+                  </div>
                 </div>
               </div>
             </TabsContent>
