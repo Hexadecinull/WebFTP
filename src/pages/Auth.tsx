@@ -164,7 +164,7 @@ export default function Auth({ onClose }: { onClose?: () => void }) {
             </TabsList>
 
             <TabsContent value="signin">
-              <form onSubmit={handleSignIn} className="space-y-4 min-h-[440px] flex flex-col">
+              <form onSubmit={handleSignIn} className="space-y-4 flex flex-col">
                 <div className="space-y-2">
                   <Label htmlFor="signin-email">Email</Label>
                   <Input

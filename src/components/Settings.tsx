@@ -829,7 +829,7 @@ export const Settings = ({ onClose }: SettingsProps) => {
                     <div className="p-4 border border-border rounded-lg">
                       <Label className="text-base font-semibold">Source Code</Label>
                       <p className="text-sm text-muted-foreground mt-1 mb-3">
-                        This project is open source under the MIT License
+                        This project is open source under the GNU GPLv3 License
                       </p>
                       <Button
                         variant="outline"
