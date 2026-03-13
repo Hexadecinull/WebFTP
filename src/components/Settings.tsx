@@ -136,23 +136,30 @@ export const Settings = ({ onClose }: SettingsProps) => {
     const [h, s, l] = primaryHsl.split(' ').map(v => parseFloat(v));
     const isDark = theme === 'dark';
     
-    // Apply subtle theme color hints to backgrounds, sidebar, dialogs, tabs, and cards
     if (isDark) {
       const bgLightness = useAmoled ? 0 : 10;
-      document.documentElement.style.setProperty('--background', `${h} ${Math.min(s * 0.2, 20)}% ${bgLightness}%`);
+      const sat = Math.min(s * 0.2, 20);
+      document.documentElement.style.setProperty('--background', `${h} ${sat}% ${bgLightness}%`);
       document.documentElement.style.setProperty('--card', `${h} ${Math.min(s * 0.2, 18)}% ${Math.min(bgLightness + 4, 14)}%`);
       document.documentElement.style.setProperty('--popover', `${h} ${Math.min(s * 0.2, 18)}% ${Math.min(bgLightness + 4, 14)}%`);
       document.documentElement.style.setProperty('--sidebar-background', `${h} ${Math.min(s * 0.15, 20)}% ${Math.min(bgLightness + 2, 12)}%`);
       document.documentElement.style.setProperty('--sidebar-accent', `${h} ${Math.min(s * 0.2, 18)}% ${Math.min(bgLightness + 8, 18)}%`);
       document.documentElement.style.setProperty('--muted', `${h} ${Math.min(s * 0.15, 20)}% ${Math.min(bgLightness + 5, 15)}%`);
+      document.documentElement.style.setProperty('--secondary', `${h} ${Math.min(s * 0.18, 18)}% ${Math.min(bgLightness + 6, 18)}%`);
+      document.documentElement.style.setProperty('--border', `${h} ${Math.min(s * 0.15, 16)}% ${Math.min(bgLightness + 10, 20)}%`);
+      document.documentElement.style.setProperty('--input', `${h} ${Math.min(s * 0.15, 16)}% ${Math.min(bgLightness + 10, 20)}%`);
     } else {
-      // Light mode - more visible subtle tint with better contrast
-      document.documentElement.style.setProperty('--background', `${h} ${Math.min(s * 0.15, 20)}% 97%`);
-      document.documentElement.style.setProperty('--card', `${h} ${Math.min(s * 0.1, 10)}% 99%`);
-      document.documentElement.style.setProperty('--popover', `${h} ${Math.min(s * 0.1, 10)}% 99%`);
-      document.documentElement.style.setProperty('--sidebar-background', `${h} ${Math.min(s * 0.15, 25)}% 98%`);
-      document.documentElement.style.setProperty('--sidebar-accent', `${h} ${Math.min(s * 0.2, 30)}% 94%`);
-      document.documentElement.style.setProperty('--muted', `${h} ${Math.min(s * 0.2, 25)}% 94%`);
+      // Light mode - clearly visible tints derived from the primary color
+      const lightSat = Math.min(s * 0.4, 45);
+      document.documentElement.style.setProperty('--background', `${h} ${lightSat}% 96%`);
+      document.documentElement.style.setProperty('--card', `${h} ${Math.min(s * 0.3, 30)}% 98%`);
+      document.documentElement.style.setProperty('--popover', `${h} ${Math.min(s * 0.3, 30)}% 98%`);
+      document.documentElement.style.setProperty('--sidebar-background', `${h} ${Math.min(s * 0.35, 40)}% 95%`);
+      document.documentElement.style.setProperty('--sidebar-accent', `${h} ${Math.min(s * 0.4, 45)}% 90%`);
+      document.documentElement.style.setProperty('--muted', `${h} ${Math.min(s * 0.35, 40)}% 92%`);
+      document.documentElement.style.setProperty('--secondary', `${h} ${Math.min(s * 0.3, 35)}% 90%`);
+      document.documentElement.style.setProperty('--border', `${h} ${Math.min(s * 0.25, 30)}% 85%`);
+      document.documentElement.style.setProperty('--input', `${h} ${Math.min(s * 0.25, 30)}% 85%`);
     }
   };
 
