@@ -702,7 +702,7 @@ export const Settings = ({ onClose }: SettingsProps) => {
                   <div className="p-4 border border-border rounded-lg space-y-2">
                     <Label className="text-base font-semibold">Encryption Level</Label>
                     <p className="text-sm text-muted-foreground">Choose encryption strength for secure connections</p>
-                    <select className="w-full mt-2 p-2 border border-border rounded-lg bg-background">
+                    <select className="w-full mt-2 p-2 border border-border rounded-lg bg-background text-foreground">
                       <option>Standard (128-bit)</option>
                       <option>Strong (256-bit)</option>
                       <option>Maximum (AES-256-GCM)</option>
@@ -727,6 +727,47 @@ export const Settings = ({ onClose }: SettingsProps) => {
                     <Label className="text-base font-semibold">Session Timeout</Label>
                     <p className="text-sm text-muted-foreground">Automatically disconnect after inactivity (minutes)</p>
                     <Input type="number" defaultValue="30" min="5" max="120" className="mt-2" />
+                  </div>
+
+                  <div className="p-4 border border-border rounded-lg space-y-2">
+                    <Label className="text-base font-semibold">Checksum Algorithm</Label>
+                    <p className="text-sm text-muted-foreground">Algorithm used for transfer verification</p>
+                    <select className="w-full mt-2 p-2 border border-border rounded-lg bg-background text-foreground">
+                      <option>MD5</option>
+                      <option>SHA-1</option>
+                      <option>SHA-256</option>
+                      <option>CRC32</option>
+                    </select>
+                  </div>
+
+                  <div className="flex items-center justify-between p-4 border border-border rounded-lg">
+                    <div>
+                      <Label className="text-base font-semibold">Transfer Scheduling</Label>
+                      <p className="text-sm text-muted-foreground">Queue transfers to run at a scheduled time</p>
+                    </div>
+                    <Switch defaultChecked={false} />
+                  </div>
+
+                  <div className="flex items-center justify-between p-4 border border-border rounded-lg">
+                    <div>
+                      <Label className="text-base font-semibold">Directory Comparison</Label>
+                      <p className="text-sm text-muted-foreground">Show differences between local and remote directories</p>
+                    </div>
+                    <Switch defaultChecked={false} />
+                  </div>
+
+                  <div className="flex items-center justify-between p-4 border border-border rounded-lg">
+                    <div>
+                      <Label className="text-base font-semibold">Transfer Notifications</Label>
+                      <p className="text-sm text-muted-foreground">Show desktop notifications when transfers complete</p>
+                    </div>
+                    <Switch defaultChecked={true} />
+                  </div>
+
+                  <div className="p-4 border border-border rounded-lg space-y-2">
+                    <Label className="text-base font-semibold">Speed Graph History</Label>
+                    <p className="text-sm text-muted-foreground">Duration of transfer speed history to display (seconds)</p>
+                    <Input type="number" defaultValue="60" min="10" max="300" className="mt-2" />
                   </div>
                 </div>
               </div>
