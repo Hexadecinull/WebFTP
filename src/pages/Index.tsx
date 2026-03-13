@@ -35,7 +35,7 @@ import { useTransferQueue } from '@/presenters/useTransferQueue';
 
 const Index = () => {
   const { user } = useAuth();
-  
+  const { handleEmptyClick } = useEasterEgg();
   // Initialize Model layer
   const ftpRepository = useMemo(() => new FtpRepositoryImpl(), []);
   const transferQueueManager = useMemo(() => new TransferQueueManager(), []);
