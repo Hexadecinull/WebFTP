@@ -9,6 +9,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Switch } from '@/components/ui/switch';
 import { ConnectOptions } from '@/types/ftp';
+import { useAuth } from '@/contexts/AuthContext';
+import { Lock } from 'lucide-react';
 
 interface ConnectionDialogProps {
   open: boolean;
@@ -43,6 +45,7 @@ export const ConnectionDialog = ({
   const [smbDomain, setSmbDomain] = useState('');
   const [smbVersion, setSmbVersion] = useState('automatic');
   const [privateKey, setPrivateKey] = useState<File | null>(null);
+  const { user } = useAuth();
 
   // Update port when protocol or security changes
   useEffect(() => {
@@ -486,9 +489,13 @@ export const ConnectionDialog = ({
                     type="button"
                     variant="ghost"
                     size="sm"
-                    onClick={() => setShowFtpMore(!showFtpMore)}
+                    onClick={() => user && setShowFtpMore(!showFtpMore)}
+                    disabled={!user}
+                    className={!user ? 'opacity-50' : ''}
                   >
+                    {!user ? <Lock className="h-3 w-3 mr-1" /> : null}
                     {showFtpMore ? 'Less' : 'More'}
+                    {!user && <span className="text-xs ml-1 text-muted-foreground">Login required</span>}
                   </Button>
                 )}
                 {formData.protocol === 'sftp' && (
@@ -496,9 +503,13 @@ export const ConnectionDialog = ({
                     type="button"
                     variant="ghost"
                     size="sm"
-                    onClick={() => setShowSftpMore(!showSftpMore)}
+                    onClick={() => user && setShowSftpMore(!showSftpMore)}
+                    disabled={!user}
+                    className={!user ? 'opacity-50' : ''}
                   >
+                    {!user ? <Lock className="h-3 w-3 mr-1" /> : null}
                     {showSftpMore ? 'Less' : 'More'}
+                    {!user && <span className="text-xs ml-1 text-muted-foreground">Login required</span>}
                   </Button>
                 )}
                 {formData.protocol === 'smb' && (
@@ -506,9 +517,13 @@ export const ConnectionDialog = ({
                     type="button"
                     variant="ghost"
                     size="sm"
-                    onClick={() => setShowSmbMore(!showSmbMore)}
+                    onClick={() => user && setShowSmbMore(!showSmbMore)}
+                    disabled={!user}
+                    className={!user ? 'opacity-50' : ''}
                   >
+                    {!user ? <Lock className="h-3 w-3 mr-1" /> : null}
                     {showSmbMore ? 'Less' : 'More'}
+                    {!user && <span className="text-xs ml-1 text-muted-foreground">Login required</span>}
                   </Button>
                 )}
                 {formData.protocol === 'webdav' && (
@@ -516,9 +531,13 @@ export const ConnectionDialog = ({
                     type="button"
                     variant="ghost"
                     size="sm"
-                    onClick={() => setShowWebdavMore(!showWebdavMore)}
+                    onClick={() => user && setShowWebdavMore(!showWebdavMore)}
+                    disabled={!user}
+                    className={!user ? 'opacity-50' : ''}
                   >
+                    {!user ? <Lock className="h-3 w-3 mr-1" /> : null}
                     {showWebdavMore ? 'Less' : 'More'}
+                    {!user && <span className="text-xs ml-1 text-muted-foreground">Login required</span>}
                   </Button>
                 )}
               </div>

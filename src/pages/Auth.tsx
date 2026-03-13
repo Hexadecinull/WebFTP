@@ -135,7 +135,7 @@ export default function Auth({ onClose }: { onClose?: () => void }) {
 
   return (
     <div className={`flex items-center justify-center ${!onClose ? 'min-h-screen bg-gradient-to-br from-background via-accent/5 to-background' : ''} p-4 ${isClosing ? 'animate-fade-out' : 'animate-fade-in'}`}>
-      <Card className={`w-full max-w-5xl relative ${isClosing ? 'animate-scale-out' : 'animate-scale-in'}`}>
+      <Card className={`w-full max-w-md relative ${isClosing ? 'animate-scale-out' : 'animate-scale-in'}`}>
         {onClose && (
           <Button
             variant="ghost"
@@ -164,7 +164,7 @@ export default function Auth({ onClose }: { onClose?: () => void }) {
             </TabsList>
 
             <TabsContent value="signin">
-              <form onSubmit={handleSignIn} className="space-y-4 min-h-[440px] flex flex-col">
+              <form onSubmit={handleSignIn} className="space-y-4 flex flex-col">
                 <div className="space-y-2">
                   <Label htmlFor="signin-email">Email</Label>
                   <Input

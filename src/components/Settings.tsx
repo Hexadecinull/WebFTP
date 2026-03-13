@@ -136,23 +136,30 @@ export const Settings = ({ onClose }: SettingsProps) => {
     const [h, s, l] = primaryHsl.split(' ').map(v => parseFloat(v));
     const isDark = theme === 'dark';
     
-    // Apply subtle theme color hints to backgrounds, sidebar, dialogs, tabs, and cards
     if (isDark) {
       const bgLightness = useAmoled ? 0 : 10;
-      document.documentElement.style.setProperty('--background', `${h} ${Math.min(s * 0.2, 20)}% ${bgLightness}%`);
+      const sat = Math.min(s * 0.2, 20);
+      document.documentElement.style.setProperty('--background', `${h} ${sat}% ${bgLightness}%`);
       document.documentElement.style.setProperty('--card', `${h} ${Math.min(s * 0.2, 18)}% ${Math.min(bgLightness + 4, 14)}%`);
       document.documentElement.style.setProperty('--popover', `${h} ${Math.min(s * 0.2, 18)}% ${Math.min(bgLightness + 4, 14)}%`);
       document.documentElement.style.setProperty('--sidebar-background', `${h} ${Math.min(s * 0.15, 20)}% ${Math.min(bgLightness + 2, 12)}%`);
       document.documentElement.style.setProperty('--sidebar-accent', `${h} ${Math.min(s * 0.2, 18)}% ${Math.min(bgLightness + 8, 18)}%`);
       document.documentElement.style.setProperty('--muted', `${h} ${Math.min(s * 0.15, 20)}% ${Math.min(bgLightness + 5, 15)}%`);
+      document.documentElement.style.setProperty('--secondary', `${h} ${Math.min(s * 0.18, 18)}% ${Math.min(bgLightness + 6, 18)}%`);
+      document.documentElement.style.setProperty('--border', `${h} ${Math.min(s * 0.15, 16)}% ${Math.min(bgLightness + 10, 20)}%`);
+      document.documentElement.style.setProperty('--input', `${h} ${Math.min(s * 0.15, 16)}% ${Math.min(bgLightness + 10, 20)}%`);
     } else {
-      // Light mode - more visible subtle tint with better contrast
-      document.documentElement.style.setProperty('--background', `${h} ${Math.min(s * 0.15, 20)}% 97%`);
-      document.documentElement.style.setProperty('--card', `${h} ${Math.min(s * 0.1, 10)}% 99%`);
-      document.documentElement.style.setProperty('--popover', `${h} ${Math.min(s * 0.1, 10)}% 99%`);
-      document.documentElement.style.setProperty('--sidebar-background', `${h} ${Math.min(s * 0.15, 25)}% 98%`);
-      document.documentElement.style.setProperty('--sidebar-accent', `${h} ${Math.min(s * 0.2, 30)}% 94%`);
-      document.documentElement.style.setProperty('--muted', `${h} ${Math.min(s * 0.2, 25)}% 94%`);
+      // Light mode - clearly visible tints derived from the primary color
+      const lightSat = Math.min(s * 0.4, 45);
+      document.documentElement.style.setProperty('--background', `${h} ${lightSat}% 96%`);
+      document.documentElement.style.setProperty('--card', `${h} ${Math.min(s * 0.3, 30)}% 98%`);
+      document.documentElement.style.setProperty('--popover', `${h} ${Math.min(s * 0.3, 30)}% 98%`);
+      document.documentElement.style.setProperty('--sidebar-background', `${h} ${Math.min(s * 0.35, 40)}% 95%`);
+      document.documentElement.style.setProperty('--sidebar-accent', `${h} ${Math.min(s * 0.4, 45)}% 90%`);
+      document.documentElement.style.setProperty('--muted', `${h} ${Math.min(s * 0.35, 40)}% 92%`);
+      document.documentElement.style.setProperty('--secondary', `${h} ${Math.min(s * 0.3, 35)}% 90%`);
+      document.documentElement.style.setProperty('--border', `${h} ${Math.min(s * 0.25, 30)}% 85%`);
+      document.documentElement.style.setProperty('--input', `${h} ${Math.min(s * 0.25, 30)}% 85%`);
     }
   };
 
@@ -168,8 +175,16 @@ export const Settings = ({ onClose }: SettingsProps) => {
     });
   };
 
+  // Clamp saturation to avoid garish buttons while keeping the hue
+  const clampSaturation = (satPercent: number, lightPercent: number): number => {
+    // If very saturated (>85%) and mid-lightness, desaturate to a tasteful level
+    if (satPercent > 85 && lightPercent > 30 && lightPercent < 70) {
+      return 75;
+    }
+    return satPercent;
+  };
+
   const applyCustomColor = (hexColor: string) => {
-    // Convert hex to HSL
     const hex = hexColor.replace('#', '');
     const r = parseInt(hex.substring(0, 2), 16) / 255;
     const g = parseInt(hex.substring(2, 4), 16) / 255;
@@ -190,13 +205,23 @@ export const Settings = ({ onClose }: SettingsProps) => {
       }
     }
 
-    // Avoid pure black (#000000) - use very dark gray instead
     let adjustedL = Math.round(l * 100);
-    if (adjustedL === 0 && Math.round(s * 100) === 0) {
-      adjustedL = 15; // Use very dark gray instead of pure black
+    let adjustedS = Math.round(s * 100);
+
+    // Avoid pure black (#000000) - bump to dark gray
+    if (adjustedL === 0 && adjustedS === 0) {
+      adjustedL = 15;
+      adjustedS = 10;
+    }
+    // Avoid very dark colors that look invisible
+    if (adjustedL < 10) {
+      adjustedL = 15;
     }
 
-    const hsl = `${Math.round(h * 360)} ${Math.round(s * 100)}% ${adjustedL}%`;
+    // Clamp oversaturated colors
+    adjustedS = clampSaturation(adjustedS, adjustedL);
+
+    const hsl = `${Math.round(h * 360)} ${adjustedS}% ${adjustedL}%`;
     document.documentElement.style.setProperty('--primary', hsl);
     applyMaterialYouTheming(hsl);
     localStorage.setItem('customPrimaryColor', hsl);
@@ -224,24 +249,35 @@ export const Settings = ({ onClose }: SettingsProps) => {
     localStorage.setItem('useAmoled', checked.toString());
     
     if (checked && theme === 'dark') {
-      // Apply pure black immediately
-      document.documentElement.style.setProperty('--background', '0 0% 0%');
-      document.documentElement.style.setProperty('--card', '0 0% 4%');
-      document.documentElement.style.setProperty('--popover', '0 0% 4%');
-      document.documentElement.style.setProperty('--sidebar-background', '0 0% 2%');
-      document.documentElement.style.setProperty('--sidebar-accent', '0 0% 8%');
-    } else {
+      // Apply pure black immediately, but keep the primary color hue hint if Material You is on
+      const primaryHsl = getComputedStyle(document.documentElement).getPropertyValue('--primary').trim();
+      const [h] = primaryHsl ? primaryHsl.split(' ').map(v => parseFloat(v)) : [0];
+      const hue = useMaterialYou ? h : 0;
+      const sat = useMaterialYou ? 5 : 0;
+      document.documentElement.style.setProperty('--background', `${hue} ${sat}% 0%`);
+      document.documentElement.style.setProperty('--card', `${hue} ${sat}% 4%`);
+      document.documentElement.style.setProperty('--popover', `${hue} ${sat}% 4%`);
+      document.documentElement.style.setProperty('--sidebar-background', `${hue} ${sat}% 2%`);
+      document.documentElement.style.setProperty('--sidebar-accent', `${hue} ${sat}% 8%`);
+      document.documentElement.style.setProperty('--muted', `${hue} ${sat}% 6%`);
+      document.documentElement.style.setProperty('--secondary', `${hue} ${sat}% 6%`);
+      document.documentElement.style.setProperty('--border', `${hue} ${sat}% 12%`);
+      document.documentElement.style.setProperty('--input', `${hue} ${sat}% 12%`);
+    } else if (!checked && theme === 'dark') {
       // Reapply Material You or default theming
       const primaryHsl = getComputedStyle(document.documentElement).getPropertyValue('--primary').trim();
       if (primaryHsl && useMaterialYou) {
         applyMaterialYouTheming(primaryHsl);
-      } else if (theme === 'dark') {
-        // Reset to default dark values
+      } else {
         document.documentElement.style.setProperty('--background', '220 20% 10%');
         document.documentElement.style.setProperty('--card', '220 18% 14%');
         document.documentElement.style.setProperty('--popover', '220 18% 14%');
         document.documentElement.style.setProperty('--sidebar-background', '220 20% 12%');
         document.documentElement.style.setProperty('--sidebar-accent', '220 18% 18%');
+        document.documentElement.style.setProperty('--muted', '220 18% 18%');
+        document.documentElement.style.setProperty('--secondary', '220 18% 18%');
+        document.documentElement.style.setProperty('--border', '220 18% 20%');
+        document.documentElement.style.setProperty('--input', '220 18% 20%');
       }
     }
   };
@@ -258,12 +294,20 @@ export const Settings = ({ onClose }: SettingsProps) => {
         document.documentElement.style.setProperty('--popover', '220 18% 14%');
         document.documentElement.style.setProperty('--sidebar-background', '220 20% 12%');
         document.documentElement.style.setProperty('--sidebar-accent', '220 18% 18%');
+        document.documentElement.style.setProperty('--muted', '220 18% 18%');
+        document.documentElement.style.setProperty('--secondary', '220 18% 18%');
+        document.documentElement.style.setProperty('--border', '220 18% 20%');
+        document.documentElement.style.setProperty('--input', '220 18% 20%');
       } else {
         document.documentElement.style.setProperty('--background', '220 18% 97%');
         document.documentElement.style.setProperty('--card', '0 0% 100%');
         document.documentElement.style.setProperty('--popover', '0 0% 100%');
         document.documentElement.style.setProperty('--sidebar-background', '220 18% 99%');
         document.documentElement.style.setProperty('--sidebar-accent', '200 80% 96%');
+        document.documentElement.style.setProperty('--muted', '220 15% 94%');
+        document.documentElement.style.setProperty('--secondary', '220 15% 92%');
+        document.documentElement.style.setProperty('--border', '220 15% 88%');
+        document.documentElement.style.setProperty('--input', '220 15% 88%');
       }
     } else {
       // Reapply Material You theming
@@ -407,10 +451,10 @@ export const Settings = ({ onClose }: SettingsProps) => {
                     <Moon className="h-5 w-5" />
                     <div>
                       <Label className="text-base font-semibold">AMOLED (Pure Black)</Label>
-                      <p className="text-sm text-muted-foreground">Use pure black backgrounds in dark mode</p>
+                      <p className="text-sm text-muted-foreground">Use pure black backgrounds (applies in dark mode)</p>
                     </div>
                   </div>
-                  <Switch checked={useAmoled} onCheckedChange={handleAmoledChange} disabled={theme !== 'dark'} />
+                  <Switch checked={useAmoled} onCheckedChange={handleAmoledChange} />
                 </div>
 
                 <div className="flex items-center justify-between p-4 border border-border rounded-lg">
@@ -535,6 +579,39 @@ export const Settings = ({ onClose }: SettingsProps) => {
                       className="mt-2" 
                     />
                   </div>
+
+                  <div className="p-4 border border-border rounded-lg space-y-2">
+                    <Label className="text-base font-semibold">Max Retry Attempts</Label>
+                    <p className="text-sm text-muted-foreground">Number of times to retry a failed connection</p>
+                    <Input type="number" defaultValue="3" min="0" max="10" className="mt-2" />
+                  </div>
+
+                  <div className="flex items-center justify-between p-4 border border-border rounded-lg">
+                    <div>
+                      <Label className="text-base font-semibold">Auto Reconnect</Label>
+                      <p className="text-sm text-muted-foreground">Automatically reconnect when connection drops</p>
+                    </div>
+                    <Switch defaultChecked={true} />
+                  </div>
+
+                  <div className="p-4 border border-border rounded-lg space-y-2">
+                    <Label className="text-base font-semibold">Default Protocol</Label>
+                    <p className="text-sm text-muted-foreground">Default protocol when creating new connections</p>
+                    <select className="w-full mt-2 p-2 border border-border rounded-lg bg-background text-foreground">
+                      <option>FTP / FTPS</option>
+                      <option>SFTP</option>
+                      <option>SMB</option>
+                      <option>WebDAV</option>
+                    </select>
+                  </div>
+
+                  <div className="flex items-center justify-between p-4 border border-border rounded-lg">
+                    <div>
+                      <Label className="text-base font-semibold">Verify SSL Certificates</Label>
+                      <p className="text-sm text-muted-foreground">Reject connections with invalid SSL certificates</p>
+                    </div>
+                    <Switch defaultChecked={true} />
+                  </div>
                 </div>
               </div>
             </TabsContent>
@@ -583,6 +660,39 @@ export const Settings = ({ onClose }: SettingsProps) => {
                     </div>
                     <Switch checked={usePassiveMode} onCheckedChange={handleUsePassiveModeChange} />
                   </div>
+
+                  <div className="flex items-center justify-between p-4 border border-border rounded-lg">
+                    <div>
+                      <Label className="text-base font-semibold">Preserve File Timestamps</Label>
+                      <p className="text-sm text-muted-foreground">Keep original modification dates when transferring</p>
+                    </div>
+                    <Switch defaultChecked={true} />
+                  </div>
+
+                  <div className="flex items-center justify-between p-4 border border-border rounded-lg">
+                    <div>
+                      <Label className="text-base font-semibold">Show Hidden Files</Label>
+                      <p className="text-sm text-muted-foreground">Display dotfiles and hidden directories</p>
+                    </div>
+                    <Switch defaultChecked={false} />
+                  </div>
+
+                  <div className="p-4 border border-border rounded-lg space-y-2">
+                    <Label className="text-base font-semibold">File Overwrite Policy</Label>
+                    <p className="text-sm text-muted-foreground">What to do when a file already exists at the destination</p>
+                    <select className="w-full mt-2 p-2 border border-border rounded-lg bg-background text-foreground">
+                      <option>Ask every time</option>
+                      <option>Always overwrite</option>
+                      <option>Skip existing</option>
+                      <option>Rename with suffix</option>
+                    </select>
+                  </div>
+
+                  <div className="p-4 border border-border rounded-lg space-y-2">
+                    <Label className="text-base font-semibold">Temporary File Directory</Label>
+                    <p className="text-sm text-muted-foreground">Directory for temporary download files</p>
+                    <Input type="text" defaultValue="/tmp" className="mt-2" />
+                  </div>
                 </div>
               </div>
             </TabsContent>
@@ -611,7 +721,7 @@ export const Settings = ({ onClose }: SettingsProps) => {
                   <div className="p-4 border border-border rounded-lg space-y-2">
                     <Label className="text-base font-semibold">Encryption Level</Label>
                     <p className="text-sm text-muted-foreground">Choose encryption strength for secure connections</p>
-                    <select className="w-full mt-2 p-2 border border-border rounded-lg bg-background">
+                    <select className="w-full mt-2 p-2 border border-border rounded-lg bg-background text-foreground">
                       <option>Standard (128-bit)</option>
                       <option>Strong (256-bit)</option>
                       <option>Maximum (AES-256-GCM)</option>
@@ -636,6 +746,47 @@ export const Settings = ({ onClose }: SettingsProps) => {
                     <Label className="text-base font-semibold">Session Timeout</Label>
                     <p className="text-sm text-muted-foreground">Automatically disconnect after inactivity (minutes)</p>
                     <Input type="number" defaultValue="30" min="5" max="120" className="mt-2" />
+                  </div>
+
+                  <div className="p-4 border border-border rounded-lg space-y-2">
+                    <Label className="text-base font-semibold">Checksum Algorithm</Label>
+                    <p className="text-sm text-muted-foreground">Algorithm used for transfer verification</p>
+                    <select className="w-full mt-2 p-2 border border-border rounded-lg bg-background text-foreground">
+                      <option>MD5</option>
+                      <option>SHA-1</option>
+                      <option>SHA-256</option>
+                      <option>CRC32</option>
+                    </select>
+                  </div>
+
+                  <div className="flex items-center justify-between p-4 border border-border rounded-lg">
+                    <div>
+                      <Label className="text-base font-semibold">Transfer Scheduling</Label>
+                      <p className="text-sm text-muted-foreground">Queue transfers to run at a scheduled time</p>
+                    </div>
+                    <Switch defaultChecked={false} />
+                  </div>
+
+                  <div className="flex items-center justify-between p-4 border border-border rounded-lg">
+                    <div>
+                      <Label className="text-base font-semibold">Directory Comparison</Label>
+                      <p className="text-sm text-muted-foreground">Show differences between local and remote directories</p>
+                    </div>
+                    <Switch defaultChecked={false} />
+                  </div>
+
+                  <div className="flex items-center justify-between p-4 border border-border rounded-lg">
+                    <div>
+                      <Label className="text-base font-semibold">Transfer Notifications</Label>
+                      <p className="text-sm text-muted-foreground">Show desktop notifications when transfers complete</p>
+                    </div>
+                    <Switch defaultChecked={true} />
+                  </div>
+
+                  <div className="p-4 border border-border rounded-lg space-y-2">
+                    <Label className="text-base font-semibold">Speed Graph History</Label>
+                    <p className="text-sm text-muted-foreground">Duration of transfer speed history to display (seconds)</p>
+                    <Input type="number" defaultValue="60" min="10" max="300" className="mt-2" />
                   </div>
                 </div>
               </div>
@@ -697,7 +848,7 @@ export const Settings = ({ onClose }: SettingsProps) => {
                     <div className="p-4 border border-border rounded-lg">
                       <Label className="text-base font-semibold">Source Code</Label>
                       <p className="text-sm text-muted-foreground mt-1 mb-3">
-                        This project is open source under the MIT License
+                        This project is open source under the GNU GPLv3 License
                       </p>
                       <Button
                         variant="outline"

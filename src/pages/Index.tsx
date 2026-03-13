@@ -22,6 +22,7 @@ import { UserMenu } from '@/components/UserMenu';
 import Auth from '@/pages/Auth';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { useAuth } from '@/contexts/AuthContext';
+import { useEasterEgg } from '@/hooks/useEasterEgg';
 
 // Model Layer
 import { FtpRepositoryImpl } from '@/models/FtpRepository';
@@ -34,7 +35,7 @@ import { useTransferQueue } from '@/presenters/useTransferQueue';
 
 const Index = () => {
   const { user } = useAuth();
-  
+  const { handleEmptyClick } = useEasterEgg();
   // Initialize Model layer
   const ftpRepository = useMemo(() => new FtpRepositoryImpl(), []);
   const transferQueueManager = useMemo(() => new TransferQueueManager(), []);
@@ -214,7 +215,7 @@ const Index = () => {
 
   return (
     <SidebarProvider defaultOpen={true}>
-      <div className="flex h-screen w-full bg-background">
+      <div className="flex h-screen w-full bg-background" onClick={handleEmptyClick}>
         <AppSidebar
           onNewConnection={() => setConnectionDialogOpen(true)}
           onShowBookmarks={() => setBookmarksOpen(true)}

@@ -46,6 +46,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const fetchProfile = async (userId: string) => {
+    // Check local cache first
+    const cachedProfile = localStorage.getItem(`profile_cache_${userId}`);
+    if (cachedProfile) {
+      try {
+        const parsed = JSON.parse(cachedProfile);
+        setProfile(parsed);
+      } catch {}
+    }
+
     const { data } = await supabase
       .from('profiles')
       .select('username, avatar_url')
@@ -54,6 +63,31 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     
     if (data) {
       setProfile(data);
+      // Cache profile locally (including avatar URL)
+      localStorage.setItem(`profile_cache_${userId}`, JSON.stringify(data));
+      
+      // Cache avatar image as base64 in localStorage to avoid server storage bloat
+      if (data.avatar_url) {
+        cacheAvatarLocally(data.avatar_url, userId);
+      }
+    }
+  };
+
+  const cacheAvatarLocally = async (url: string, userId: string) => {
+    try {
+      const response = await fetch(url);
+      const blob = await response.blob();
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        try {
+          localStorage.setItem(`avatar_cache_${userId}`, reader.result as string);
+        } catch {
+          // localStorage might be full, ignore
+        }
+      };
+      reader.readAsDataURL(blob);
+    } catch {
+      // Network error, ignore
     }
   };
 

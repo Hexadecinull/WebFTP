@@ -117,11 +117,16 @@ export function UserMenu() {
         <DropdownMenuContent align="end">
           <DropdownMenuLabel>
             <div className="flex flex-col space-y-1">
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 flex-wrap">
                 <p className="text-sm font-medium">{profile?.username || 'Account'}</p>
                 {user.email === 'ssmg4@proton.me' && (
                   <Badge variant="secondary" className="bg-yellow-500 hover:bg-yellow-600 text-black text-xs">
                     Owner
+                  </Badge>
+                )}
+                {localStorage.getItem(`easterEgg_${user.id}`) === 'true' && (
+                  <Badge variant="secondary" className="bg-cyan-400 hover:bg-cyan-500 text-black text-xs">
+                    🥚 Easter Hunter
                   </Badge>
                 )}
               </div>
