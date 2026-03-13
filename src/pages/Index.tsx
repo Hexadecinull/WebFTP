@@ -22,6 +22,7 @@ import { UserMenu } from '@/components/UserMenu';
 import Auth from '@/pages/Auth';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { useAuth } from '@/contexts/AuthContext';
+import { useEasterEgg } from '@/hooks/useEasterEgg';
 
 // Model Layer
 import { FtpRepositoryImpl } from '@/models/FtpRepository';
