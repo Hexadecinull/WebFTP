@@ -435,7 +435,7 @@ export const Settings = ({ onClose }: SettingsProps) => {
                       <p className="text-sm text-muted-foreground">Use pure black backgrounds in dark mode</p>
                     </div>
                   </div>
-                  <Switch checked={useAmoled} onCheckedChange={handleAmoledChange} disabled={theme !== 'dark'} />
+                  <Switch checked={useAmoled} onCheckedChange={handleAmoledChange} />
                 </div>
 
                 <div className="flex items-center justify-between p-4 border border-border rounded-lg">
