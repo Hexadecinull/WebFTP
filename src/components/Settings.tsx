@@ -175,8 +175,16 @@ export const Settings = ({ onClose }: SettingsProps) => {
     });
   };
 
+  // Clamp saturation to avoid garish buttons while keeping the hue
+  const clampSaturation = (satPercent: number, lightPercent: number): number => {
+    // If very saturated (>85%) and mid-lightness, desaturate to a tasteful level
+    if (satPercent > 85 && lightPercent > 30 && lightPercent < 70) {
+      return 75;
+    }
+    return satPercent;
+  };
+
   const applyCustomColor = (hexColor: string) => {
-    // Convert hex to HSL
     const hex = hexColor.replace('#', '');
     const r = parseInt(hex.substring(0, 2), 16) / 255;
     const g = parseInt(hex.substring(2, 4), 16) / 255;
@@ -197,13 +205,23 @@ export const Settings = ({ onClose }: SettingsProps) => {
       }
     }
 
-    // Avoid pure black (#000000) - use very dark gray instead
     let adjustedL = Math.round(l * 100);
-    if (adjustedL === 0 && Math.round(s * 100) === 0) {
-      adjustedL = 15; // Use very dark gray instead of pure black
+    let adjustedS = Math.round(s * 100);
+
+    // Avoid pure black (#000000) - bump to dark gray
+    if (adjustedL === 0 && adjustedS === 0) {
+      adjustedL = 15;
+      adjustedS = 10;
+    }
+    // Avoid very dark colors that look invisible
+    if (adjustedL < 10) {
+      adjustedL = 15;
     }
 
-    const hsl = `${Math.round(h * 360)} ${Math.round(s * 100)}% ${adjustedL}%`;
+    // Clamp oversaturated colors
+    adjustedS = clampSaturation(adjustedS, adjustedL);
+
+    const hsl = `${Math.round(h * 360)} ${adjustedS}% ${adjustedL}%`;
     document.documentElement.style.setProperty('--primary', hsl);
     applyMaterialYouTheming(hsl);
     localStorage.setItem('customPrimaryColor', hsl);
