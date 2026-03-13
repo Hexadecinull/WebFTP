@@ -432,7 +432,7 @@ export const Settings = ({ onClose }: SettingsProps) => {
                     <Moon className="h-5 w-5" />
                     <div>
                       <Label className="text-base font-semibold">AMOLED (Pure Black)</Label>
-                      <p className="text-sm text-muted-foreground">Use pure black backgrounds in dark mode</p>
+                      <p className="text-sm text-muted-foreground">Use pure black backgrounds (applies in dark mode)</p>
                     </div>
                   </div>
                   <Switch checked={useAmoled} onCheckedChange={handleAmoledChange} />
