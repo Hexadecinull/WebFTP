@@ -560,6 +560,39 @@ export const Settings = ({ onClose }: SettingsProps) => {
                       className="mt-2" 
                     />
                   </div>
+
+                  <div className="p-4 border border-border rounded-lg space-y-2">
+                    <Label className="text-base font-semibold">Max Retry Attempts</Label>
+                    <p className="text-sm text-muted-foreground">Number of times to retry a failed connection</p>
+                    <Input type="number" defaultValue="3" min="0" max="10" className="mt-2" />
+                  </div>
+
+                  <div className="flex items-center justify-between p-4 border border-border rounded-lg">
+                    <div>
+                      <Label className="text-base font-semibold">Auto Reconnect</Label>
+                      <p className="text-sm text-muted-foreground">Automatically reconnect when connection drops</p>
+                    </div>
+                    <Switch defaultChecked={true} />
+                  </div>
+
+                  <div className="p-4 border border-border rounded-lg space-y-2">
+                    <Label className="text-base font-semibold">Default Protocol</Label>
+                    <p className="text-sm text-muted-foreground">Default protocol when creating new connections</p>
+                    <select className="w-full mt-2 p-2 border border-border rounded-lg bg-background text-foreground">
+                      <option>FTP / FTPS</option>
+                      <option>SFTP</option>
+                      <option>SMB</option>
+                      <option>WebDAV</option>
+                    </select>
+                  </div>
+
+                  <div className="flex items-center justify-between p-4 border border-border rounded-lg">
+                    <div>
+                      <Label className="text-base font-semibold">Verify SSL Certificates</Label>
+                      <p className="text-sm text-muted-foreground">Reject connections with invalid SSL certificates</p>
+                    </div>
+                    <Switch defaultChecked={true} />
+                  </div>
                 </div>
               </div>
             </TabsContent>
