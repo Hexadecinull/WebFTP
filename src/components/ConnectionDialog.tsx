@@ -45,6 +45,7 @@ export const ConnectionDialog = ({
   const [smbDomain, setSmbDomain] = useState('');
   const [smbVersion, setSmbVersion] = useState('automatic');
   const [privateKey, setPrivateKey] = useState<File | null>(null);
+  const { user } = useAuth();
 
   // Update port when protocol or security changes
   useEffect(() => {
