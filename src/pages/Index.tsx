@@ -215,7 +215,7 @@ const Index = () => {
 
   return (
     <SidebarProvider defaultOpen={true}>
-      <div className="flex h-screen w-full bg-background">
+      <div className="flex h-screen w-full bg-background" onClick={handleEmptyClick}>
         <AppSidebar
           onNewConnection={() => setConnectionDialogOpen(true)}
           onShowBookmarks={() => setBookmarksOpen(true)}
