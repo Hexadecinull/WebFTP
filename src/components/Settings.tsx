@@ -249,24 +249,35 @@ export const Settings = ({ onClose }: SettingsProps) => {
     localStorage.setItem('useAmoled', checked.toString());
     
     if (checked && theme === 'dark') {
-      // Apply pure black immediately
-      document.documentElement.style.setProperty('--background', '0 0% 0%');
-      document.documentElement.style.setProperty('--card', '0 0% 4%');
-      document.documentElement.style.setProperty('--popover', '0 0% 4%');
-      document.documentElement.style.setProperty('--sidebar-background', '0 0% 2%');
-      document.documentElement.style.setProperty('--sidebar-accent', '0 0% 8%');
-    } else {
+      // Apply pure black immediately, but keep the primary color hue hint if Material You is on
+      const primaryHsl = getComputedStyle(document.documentElement).getPropertyValue('--primary').trim();
+      const [h] = primaryHsl ? primaryHsl.split(' ').map(v => parseFloat(v)) : [0];
+      const hue = useMaterialYou ? h : 0;
+      const sat = useMaterialYou ? 5 : 0;
+      document.documentElement.style.setProperty('--background', `${hue} ${sat}% 0%`);
+      document.documentElement.style.setProperty('--card', `${hue} ${sat}% 4%`);
+      document.documentElement.style.setProperty('--popover', `${hue} ${sat}% 4%`);
+      document.documentElement.style.setProperty('--sidebar-background', `${hue} ${sat}% 2%`);
+      document.documentElement.style.setProperty('--sidebar-accent', `${hue} ${sat}% 8%`);
+      document.documentElement.style.setProperty('--muted', `${hue} ${sat}% 6%`);
+      document.documentElement.style.setProperty('--secondary', `${hue} ${sat}% 6%`);
+      document.documentElement.style.setProperty('--border', `${hue} ${sat}% 12%`);
+      document.documentElement.style.setProperty('--input', `${hue} ${sat}% 12%`);
+    } else if (!checked && theme === 'dark') {
       // Reapply Material You or default theming
       const primaryHsl = getComputedStyle(document.documentElement).getPropertyValue('--primary').trim();
       if (primaryHsl && useMaterialYou) {
         applyMaterialYouTheming(primaryHsl);
-      } else if (theme === 'dark') {
-        // Reset to default dark values
+      } else {
         document.documentElement.style.setProperty('--background', '220 20% 10%');
         document.documentElement.style.setProperty('--card', '220 18% 14%');
         document.documentElement.style.setProperty('--popover', '220 18% 14%');
         document.documentElement.style.setProperty('--sidebar-background', '220 20% 12%');
         document.documentElement.style.setProperty('--sidebar-accent', '220 18% 18%');
+        document.documentElement.style.setProperty('--muted', '220 18% 18%');
+        document.documentElement.style.setProperty('--secondary', '220 18% 18%');
+        document.documentElement.style.setProperty('--border', '220 18% 20%');
+        document.documentElement.style.setProperty('--input', '220 18% 20%');
       }
     }
   };
