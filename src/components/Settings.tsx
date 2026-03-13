@@ -294,12 +294,20 @@ export const Settings = ({ onClose }: SettingsProps) => {
         document.documentElement.style.setProperty('--popover', '220 18% 14%');
         document.documentElement.style.setProperty('--sidebar-background', '220 20% 12%');
         document.documentElement.style.setProperty('--sidebar-accent', '220 18% 18%');
+        document.documentElement.style.setProperty('--muted', '220 18% 18%');
+        document.documentElement.style.setProperty('--secondary', '220 18% 18%');
+        document.documentElement.style.setProperty('--border', '220 18% 20%');
+        document.documentElement.style.setProperty('--input', '220 18% 20%');
       } else {
         document.documentElement.style.setProperty('--background', '220 18% 97%');
         document.documentElement.style.setProperty('--card', '0 0% 100%');
         document.documentElement.style.setProperty('--popover', '0 0% 100%');
         document.documentElement.style.setProperty('--sidebar-background', '220 18% 99%');
         document.documentElement.style.setProperty('--sidebar-accent', '200 80% 96%');
+        document.documentElement.style.setProperty('--muted', '220 15% 94%');
+        document.documentElement.style.setProperty('--secondary', '220 15% 92%');
+        document.documentElement.style.setProperty('--border', '220 15% 88%');
+        document.documentElement.style.setProperty('--input', '220 15% 88%');
       }
     } else {
       // Reapply Material You theming
