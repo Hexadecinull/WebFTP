@@ -10,7 +10,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Switch } from '@/components/ui/switch';
 import { ConnectOptions } from '@/types/ftp';
 import { useAuth } from '@/contexts/AuthContext';
-import { Lock } from 'lucide-react';
+import { Lock, ChevronDown } from 'lucide-react';
 
 interface ConnectionDialogProps {
   open: boolean;
