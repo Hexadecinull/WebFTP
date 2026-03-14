@@ -64,10 +64,11 @@ export default function Auth({ onClose }: { onClose?: () => void }) {
 
   const handleSignIn = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+    const form = e.currentTarget;
     setIsLoading(true);
     setSignInError('');
 
-    const formData = new FormData(e.currentTarget);
+    const formData = new FormData(form);
     const email = formData.get('email') as string;
     const password = formData.get('password') as string;
 
@@ -86,7 +87,8 @@ export default function Auth({ onClose }: { onClose?: () => void }) {
     if (error) {
       setSignInError('Incorrect user credentials, please try again.');
       // Clear password field
-      (e.currentTarget.querySelector('#signin-password') as HTMLInputElement).value = '';
+      const pwField = form.querySelector('#signin-password') as HTMLInputElement;
+      if (pwField) pwField.value = '';
       setIsLoading(false);
     } else {
       if (onClose) onClose();
