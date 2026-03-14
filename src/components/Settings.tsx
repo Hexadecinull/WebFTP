@@ -446,15 +446,15 @@ export const Settings = ({ onClose }: SettingsProps) => {
                   <Switch checked={theme === 'dark'} onCheckedChange={toggleTheme} disabled={useSystemTheme} />
                 </div>
 
-                <div className="flex items-center justify-between p-4 border border-border rounded-lg">
+                <div className={`flex items-center justify-between p-4 border border-border rounded-lg ${theme !== 'dark' ? 'opacity-50' : ''}`}>
                   <div className="flex items-center gap-3">
                     <Moon className="h-5 w-5" />
                     <div>
                       <Label className="text-base font-semibold">AMOLED (Pure Black)</Label>
-                      <p className="text-sm text-muted-foreground">Use pure black backgrounds (applies in dark mode)</p>
+                      <p className="text-sm text-muted-foreground">Use pure black backgrounds (dark mode only)</p>
                     </div>
                   </div>
-                  <Switch checked={useAmoled} onCheckedChange={handleAmoledChange} />
+                  <Switch checked={useAmoled && theme === 'dark'} onCheckedChange={handleAmoledChange} disabled={theme !== 'dark'} />
                 </div>
 
                 <div className="flex items-center justify-between p-4 border border-border rounded-lg">

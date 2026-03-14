@@ -48,11 +48,11 @@ export function AppSidebar({ onNewConnection, onShowBookmarks, onShowSavedConnec
   
   return (
     <Sidebar collapsible="icon" className="border-r border-border">
-      <div className="h-14 border-b border-border flex items-center justify-between px-3">
+      <div className="h-14 border-b border-border flex items-center justify-between px-2">
         {open && (
-          <span className="text-xs font-medium text-muted-foreground italic leading-tight">{motivationalPhrase}</span>
+          <span className="text-[11px] font-medium text-muted-foreground italic leading-tight truncate mr-1">{motivationalPhrase}</span>
         )}
-        <SidebarTrigger className="ml-auto rounded-md" />
+        <SidebarTrigger className="ml-auto rounded-lg shrink-0" />
       </div>
       <SidebarContent>
         <SidebarGroup>
