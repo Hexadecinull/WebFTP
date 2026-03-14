@@ -25,7 +25,7 @@ export function useEasterEgg() {
 
     // Only count clicks on empty areas (not on buttons, inputs, links, etc.)
     const target = e.target as HTMLElement;
-    const interactive = target.closest('button, a, input, select, textarea, [role="button"], [data-sidebar], .cursor-pointer');
+    const interactive = target.closest('button, a, input, select, textarea, [role="button"], [data-sidebar]');
     if (interactive) return;
 
     const now = Date.now();

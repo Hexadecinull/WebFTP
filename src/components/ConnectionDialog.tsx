@@ -10,7 +10,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Switch } from '@/components/ui/switch';
 import { ConnectOptions } from '@/types/ftp';
 import { useAuth } from '@/contexts/AuthContext';
-import { Lock } from 'lucide-react';
+import { Lock, ChevronDown } from 'lucide-react';
 
 interface ConnectionDialogProps {
   open: boolean;
@@ -494,7 +494,8 @@ export const ConnectionDialog = ({
                     className={!user ? 'opacity-50' : ''}
                   >
                     {!user ? <Lock className="h-3 w-3 mr-1" /> : null}
-                    {showFtpMore ? 'Less' : 'More'}
+                    More
+                    <ChevronDown className={`h-3 w-3 ml-1 transition-transform ${showFtpMore ? 'rotate-180' : ''}`} />
                     {!user && <span className="text-xs ml-1 text-muted-foreground">Login required</span>}
                   </Button>
                 )}
@@ -508,7 +509,8 @@ export const ConnectionDialog = ({
                     className={!user ? 'opacity-50' : ''}
                   >
                     {!user ? <Lock className="h-3 w-3 mr-1" /> : null}
-                    {showSftpMore ? 'Less' : 'More'}
+                    More
+                    <ChevronDown className={`h-3 w-3 ml-1 transition-transform ${showSftpMore ? 'rotate-180' : ''}`} />
                     {!user && <span className="text-xs ml-1 text-muted-foreground">Login required</span>}
                   </Button>
                 )}
@@ -522,7 +524,8 @@ export const ConnectionDialog = ({
                     className={!user ? 'opacity-50' : ''}
                   >
                     {!user ? <Lock className="h-3 w-3 mr-1" /> : null}
-                    {showSmbMore ? 'Less' : 'More'}
+                    More
+                    <ChevronDown className={`h-3 w-3 ml-1 transition-transform ${showSmbMore ? 'rotate-180' : ''}`} />
                     {!user && <span className="text-xs ml-1 text-muted-foreground">Login required</span>}
                   </Button>
                 )}
@@ -536,7 +539,8 @@ export const ConnectionDialog = ({
                     className={!user ? 'opacity-50' : ''}
                   >
                     {!user ? <Lock className="h-3 w-3 mr-1" /> : null}
-                    {showWebdavMore ? 'Less' : 'More'}
+                    More
+                    <ChevronDown className={`h-3 w-3 ml-1 transition-transform ${showWebdavMore ? 'rotate-180' : ''}`} />
                     {!user && <span className="text-xs ml-1 text-muted-foreground">Login required</span>}
                   </Button>
                 )}
