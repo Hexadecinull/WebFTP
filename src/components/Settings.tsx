@@ -133,7 +133,7 @@ export const Settings = ({ onClose }: SettingsProps) => {
   const applyMaterialYouTheming = (primaryHsl: string) => {
     if (!useMaterialYou) return;
     
-    const [h, s, l] = primaryHsl.split(' ').map(v => parseFloat(v));
+    const [h, s] = primaryHsl.split(' ').map(v => parseFloat(v));
     const isDark = theme === 'dark';
     
     if (isDark) {
@@ -149,17 +149,17 @@ export const Settings = ({ onClose }: SettingsProps) => {
       document.documentElement.style.setProperty('--border', `${h} ${Math.min(s * 0.15, 16)}% ${Math.min(bgLightness + 10, 20)}%`);
       document.documentElement.style.setProperty('--input', `${h} ${Math.min(s * 0.15, 16)}% ${Math.min(bgLightness + 10, 20)}%`);
     } else {
-      // Light mode - clearly visible tints derived from the primary color
-      const lightSat = Math.min(s * 0.4, 45);
-      document.documentElement.style.setProperty('--background', `${h} ${lightSat}% 96%`);
-      document.documentElement.style.setProperty('--card', `${h} ${Math.min(s * 0.3, 30)}% 98%`);
-      document.documentElement.style.setProperty('--popover', `${h} ${Math.min(s * 0.3, 30)}% 98%`);
-      document.documentElement.style.setProperty('--sidebar-background', `${h} ${Math.min(s * 0.35, 40)}% 95%`);
-      document.documentElement.style.setProperty('--sidebar-accent', `${h} ${Math.min(s * 0.4, 45)}% 90%`);
-      document.documentElement.style.setProperty('--muted', `${h} ${Math.min(s * 0.35, 40)}% 92%`);
-      document.documentElement.style.setProperty('--secondary', `${h} ${Math.min(s * 0.3, 35)}% 90%`);
-      document.documentElement.style.setProperty('--border', `${h} ${Math.min(s * 0.25, 30)}% 85%`);
-      document.documentElement.style.setProperty('--input', `${h} ${Math.min(s * 0.25, 30)}% 85%`);
+      // Light mode - strongly visible tints derived from the primary color
+      const lightSat = Math.min(s * 0.6, 60);
+      document.documentElement.style.setProperty('--background', `${h} ${lightSat}% 94%`);
+      document.documentElement.style.setProperty('--card', `${h} ${Math.min(s * 0.5, 50)}% 96%`);
+      document.documentElement.style.setProperty('--popover', `${h} ${Math.min(s * 0.5, 50)}% 96%`);
+      document.documentElement.style.setProperty('--sidebar-background', `${h} ${Math.min(s * 0.55, 55)}% 92%`);
+      document.documentElement.style.setProperty('--sidebar-accent', `${h} ${Math.min(s * 0.6, 60)}% 86%`);
+      document.documentElement.style.setProperty('--muted', `${h} ${Math.min(s * 0.5, 50)}% 88%`);
+      document.documentElement.style.setProperty('--secondary', `${h} ${Math.min(s * 0.45, 45)}% 86%`);
+      document.documentElement.style.setProperty('--border', `${h} ${Math.min(s * 0.4, 40)}% 80%`);
+      document.documentElement.style.setProperty('--input', `${h} ${Math.min(s * 0.4, 40)}% 80%`);
     }
   };
 
