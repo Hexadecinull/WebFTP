@@ -96,6 +96,14 @@ export const Settings = ({ onClose }: SettingsProps) => {
     }
   }, []);
 
+  // Disable AMOLED when switching to light mode
+  useEffect(() => {
+    if (theme === 'light' && useAmoled) {
+      setUseAmoled(false);
+      localStorage.setItem('useAmoled', 'false');
+    }
+  }, [theme]);
+
   // Reapply Material You theming when theme mode, AMOLED, or Material You setting changes
   useEffect(() => {
     const primaryHsl = getComputedStyle(document.documentElement).getPropertyValue('--primary').trim();
