@@ -149,17 +149,21 @@ export const Settings = ({ onClose }: SettingsProps) => {
       document.documentElement.style.setProperty('--border', `${h} ${Math.min(s * 0.15, 16)}% ${Math.min(bgLightness + 10, 20)}%`);
       document.documentElement.style.setProperty('--input', `${h} ${Math.min(s * 0.15, 16)}% ${Math.min(bgLightness + 10, 20)}%`);
     } else {
-      // Light mode - strongly visible tints derived from the primary color
-      const lightSat = Math.min(s * 0.6, 60);
-      document.documentElement.style.setProperty('--background', `${h} ${lightSat}% 94%`);
-      document.documentElement.style.setProperty('--card', `${h} ${Math.min(s * 0.5, 50)}% 96%`);
-      document.documentElement.style.setProperty('--popover', `${h} ${Math.min(s * 0.5, 50)}% 96%`);
-      document.documentElement.style.setProperty('--sidebar-background', `${h} ${Math.min(s * 0.55, 55)}% 92%`);
-      document.documentElement.style.setProperty('--sidebar-accent', `${h} ${Math.min(s * 0.6, 60)}% 86%`);
-      document.documentElement.style.setProperty('--muted', `${h} ${Math.min(s * 0.5, 50)}% 88%`);
-      document.documentElement.style.setProperty('--secondary', `${h} ${Math.min(s * 0.45, 45)}% 86%`);
-      document.documentElement.style.setProperty('--border', `${h} ${Math.min(s * 0.4, 40)}% 80%`);
-      document.documentElement.style.setProperty('--input', `${h} ${Math.min(s * 0.4, 40)}% 80%`);
+      // Light mode - more visible tints with darker shades
+      const lightSat = Math.min(s * 0.7, 70);
+      document.documentElement.style.setProperty('--background', `${h} ${lightSat}% 90%`);
+      document.documentElement.style.setProperty('--card', `${h} ${Math.min(s * 0.6, 60)}% 93%`);
+      document.documentElement.style.setProperty('--popover', `${h} ${Math.min(s * 0.6, 60)}% 93%`);
+      document.documentElement.style.setProperty('--sidebar-background', `${h} ${Math.min(s * 0.65, 65)}% 88%`);
+      document.documentElement.style.setProperty('--sidebar-accent', `${h} ${Math.min(s * 0.7, 70)}% 82%`);
+      document.documentElement.style.setProperty('--sidebar-border', `${h} ${Math.min(s * 0.5, 50)}% 78%`);
+      document.documentElement.style.setProperty('--sidebar-ring', `${h} ${Math.min(s * 0.8, 80)}% 45%`);
+      document.documentElement.style.setProperty('--muted', `${h} ${Math.min(s * 0.6, 60)}% 84%`);
+      document.documentElement.style.setProperty('--secondary', `${h} ${Math.min(s * 0.55, 55)}% 82%`);
+      document.documentElement.style.setProperty('--border', `${h} ${Math.min(s * 0.5, 50)}% 76%`);
+      document.documentElement.style.setProperty('--input', `${h} ${Math.min(s * 0.5, 50)}% 76%`);
+      document.documentElement.style.setProperty('--ring', `${h} ${Math.min(s * 0.8, 80)}% 45%`);
+      document.documentElement.style.setProperty('--accent', `${h} ${Math.min(s * 0.7, 70)}% 45%`);
     }
   };
 
