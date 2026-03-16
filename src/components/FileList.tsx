@@ -15,6 +15,8 @@ interface FileListProps {
   onEdit: (file: FtpEntry) => void;
   onOpen: (file: FtpEntry) => void;
   onProperties: (file: FtpEntry) => void;
+  onRename?: (file: FtpEntry) => void;
+  onDownloadFolder?: (file: FtpEntry) => void;
   selectedFile?: FtpEntry;
 }
 
@@ -27,6 +29,8 @@ export const FileList = ({
   onEdit,
   onOpen,
   onProperties,
+  onRename,
+  onDownloadFolder,
   selectedFile,
 }: FileListProps) => {
   return (
@@ -41,6 +45,8 @@ export const FileList = ({
             onEdit={onEdit}
             onOpen={onOpen}
             onProperties={onProperties}
+            onRename={onRename}
+            onDownloadFolder={onDownloadFolder}
             canEdit={!file.isDirectory && isEditableFile(file.name)}
           >
             <div
@@ -50,7 +56,6 @@ export const FileList = ({
               `}
               onClick={() => onFileClick(file)}
               onDoubleClick={() => {
-                // Handle ".." navigation specially
                 if (file.name === '..' && file.isDirectory) {
                   onOpen(file);
                 } else {
