@@ -496,7 +496,6 @@ export const ConnectionDialog = ({
                     {!user ? <Lock className="h-3 w-3 mr-1" /> : null}
                     More
                     <ChevronDown className={`h-3 w-3 ml-1 transition-transform ${showFtpMore ? 'rotate-180' : ''}`} />
-                    {!user && <span className="text-xs ml-1 text-muted-foreground">Login required</span>}
                   </Button>
                 )}
                 {formData.protocol === 'sftp' && (
@@ -511,7 +510,6 @@ export const ConnectionDialog = ({
                     {!user ? <Lock className="h-3 w-3 mr-1" /> : null}
                     More
                     <ChevronDown className={`h-3 w-3 ml-1 transition-transform ${showSftpMore ? 'rotate-180' : ''}`} />
-                    {!user && <span className="text-xs ml-1 text-muted-foreground">Login required</span>}
                   </Button>
                 )}
                 {formData.protocol === 'smb' && (
@@ -526,7 +524,6 @@ export const ConnectionDialog = ({
                     {!user ? <Lock className="h-3 w-3 mr-1" /> : null}
                     More
                     <ChevronDown className={`h-3 w-3 ml-1 transition-transform ${showSmbMore ? 'rotate-180' : ''}`} />
-                    {!user && <span className="text-xs ml-1 text-muted-foreground">Login required</span>}
                   </Button>
                 )}
                 {formData.protocol === 'webdav' && (
@@ -541,7 +538,6 @@ export const ConnectionDialog = ({
                     {!user ? <Lock className="h-3 w-3 mr-1" /> : null}
                     More
                     <ChevronDown className={`h-3 w-3 ml-1 transition-transform ${showWebdavMore ? 'rotate-180' : ''}`} />
-                    {!user && <span className="text-xs ml-1 text-muted-foreground">Login required</span>}
                   </Button>
                 )}
               </div>

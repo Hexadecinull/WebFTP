@@ -869,7 +869,7 @@ export const Settings = ({ onClose }: SettingsProps) => {
                       <Button
                         variant="outline"
                         className="w-full hover:bg-accent hover:text-foreground"
-                        onClick={() => window.open('https://github.com/SSMG4/WebFTP', '_blank')}
+                        onClick={() => window.open('https://github.com/Hexadecinull/WebFTP', '_blank')}
                       >
                         <Github className="h-4 w-4 mr-2" />
                         View on GitHub
