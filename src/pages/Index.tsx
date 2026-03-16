@@ -13,8 +13,14 @@ import { Settings } from '@/components/Settings';
 import { BookmarksDialog } from '@/components/BookmarksDialog';
 import { RecentConnectionsDialog } from '@/components/RecentConnectionsDialog';
 import { SavedConnectionsDialog } from '@/components/SavedConnectionsDialog';
+import { BackgroundContextMenu } from '@/components/BackgroundContextMenu';
+import { CreateFolderDialog } from '@/components/CreateFolderDialog';
+import { CreateFileDialog } from '@/components/CreateFileDialog';
+import { UploadDialog } from '@/components/UploadDialog';
+import { RenameFolderDialog } from '@/components/RenameFolderDialog';
+import { DownloadFolderDialog } from '@/components/DownloadFolderDialog';
 import { Button } from '@/components/ui/button';
-import { RefreshCw, Upload, FolderPlus, Trash2, Settings as SettingsIcon } from 'lucide-react';
+import { RefreshCw, Upload, FolderPlus, FilePlus, Trash2, Settings as SettingsIcon } from 'lucide-react';
 import { FtpEntry, ConnectOptions } from '@/types/ftp';
 import { isEditableFile } from '@/lib/fileUtils';
 import logo from '@/assets/logo.png';
@@ -23,6 +29,7 @@ import Auth from '@/pages/Auth';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { useAuth } from '@/contexts/AuthContext';
 import { useEasterEgg } from '@/hooks/useEasterEgg';
+import { toast } from '@/hooks/use-toast';
 
 // Model Layer
 import { FtpRepositoryImpl } from '@/models/FtpRepository';
@@ -50,6 +57,7 @@ const Index = () => {
     navigateUp,
     refresh,
     deleteFile,
+    renameFile,
     createFolder,
     readFile,
     writeFile,
@@ -75,12 +83,18 @@ const Index = () => {
   const [recentConnectionsOpen, setRecentConnectionsOpen] = useState(false);
   const [savedConnectionsOpen, setSavedConnectionsOpen] = useState(false);
   const [authDialogOpen, setAuthDialogOpen] = useState(false);
+  
+  // New dialog states
+  const [createFolderOpen, setCreateFolderOpen] = useState(false);
+  const [createFileOpen, setCreateFileOpen] = useState(false);
+  const [uploadDialogOpen, setUploadDialogOpen] = useState(false);
+  const [renameFolderFile, setRenameFolderFile] = useState<FtpEntry | null>(null);
+  const [downloadFolderFile, setDownloadFolderFile] = useState<FtpEntry | null>(null);
 
   // Get user IP for guest recent connections
   const [userIP, setUserIP] = useState<string>('');
   
   useEffect(() => {
-    // Get user IP for guests
     if (!user) {
       fetch('https://api.ipify.org?format=json')
         .then(res => res.json())
@@ -89,7 +103,6 @@ const Index = () => {
     }
   }, [user]);
 
-  // Store recent connections (with IP for guests)
   useEffect(() => {
     if (session) {
       const storageKey = user ? 'recentConnections' : `recentConnections_${userIP}`;
@@ -122,7 +135,6 @@ const Index = () => {
       navigateToPath(file.path);
       setSelectedFile(undefined);
     } else if (isEditableFile(file.name)) {
-      // Open file for editing
       try {
         const content = await readFile(file.path);
         setEditingFile({ path: file.path, name: file.name, content });
@@ -132,20 +144,11 @@ const Index = () => {
     }
   }, [navigateToPath, readFile]);
 
-  const handleUploadClick = useCallback(() => {
-    const input = document.createElement('input');
-    input.type = 'file';
-    input.multiple = true;
-    input.onchange = (e) => {
-      const files = (e.target as HTMLInputElement).files;
-      if (files) {
-        Array.from(files).forEach(file => {
-          const remotePath = `${currentPath}/${file.name}`.replace('//', '/');
-          startUpload(file, remotePath);
-        });
-      }
-    };
-    input.click();
+  const handleUploadFiles = useCallback((files: File[]) => {
+    files.forEach(file => {
+      const remotePath = `${currentPath}/${file.name}`.replace('//', '/');
+      startUpload(file, remotePath);
+    });
   }, [currentPath, startUpload]);
 
   const handleDrop = useCallback((e: React.DragEvent) => {
@@ -170,12 +173,33 @@ const Index = () => {
     }
   }, [selectedFile, deleteFile]);
 
-  const handleNewFolder = useCallback(() => {
-    const name = prompt('Enter folder name:');
-    if (name) {
-      createFolder(name);
-    }
+  const handleCreateFolder = useCallback((name: string) => {
+    createFolder(name);
   }, [createFolder]);
+
+  const handleCreateFile = useCallback(async (name: string) => {
+    const filePath = `${currentPath}/${name}`.replace('//', '/');
+    await writeFile(filePath, '');
+    refresh();
+    toast({
+      title: 'File Created',
+      description: `Created file: ${name}`,
+    });
+  }, [currentPath, writeFile, refresh]);
+
+  const handleRenameFolder = useCallback(async (oldPath: string, newName: string) => {
+    const parentPath = oldPath.split('/').slice(0, -1).join('/') || '/';
+    const newPath = `${parentPath}/${newName}`.replace('//', '/');
+    await renameFile(oldPath, newPath);
+  }, [renameFile]);
+
+  const handleDownloadFolder = useCallback((folder: FtpEntry, format: string) => {
+    toast({
+      title: 'Download Started',
+      description: `Downloading ${folder.name} as .${format}...`,
+    });
+    startDownload(folder.path, `${folder.name}.${format}`);
+  }, [startDownload]);
 
   const handleEditFile = useCallback(async (file: FtpEntry) => {
     if (!isEditableFile(file.name)) return;
@@ -212,6 +236,38 @@ const Index = () => {
   const handleShowProperties = useCallback((file: FtpEntry) => {
     setPropertiesFile(file);
   }, []);
+
+  const fileExplorerContent = session ? (
+    <FileList
+      files={files}
+      onFileClick={handleFileClick}
+      onFileDoubleClick={handleFileDoubleClick}
+      onDownload={handleDownloadFile}
+      onDelete={(file) => {
+        if (confirm(`Delete ${file.name}?`)) {
+          deleteFile(file.path);
+        }
+      }}
+      onEdit={handleEditFile}
+      onOpen={handleOpenFolder}
+      onProperties={handleShowProperties}
+      onRename={(file) => setRenameFolderFile(file)}
+      onDownloadFolder={(file) => setDownloadFolderFile(file)}
+      selectedFile={selectedFile}
+    />
+  ) : (
+    <div className="flex items-center justify-center h-full">
+      <div className="text-center space-y-4">
+        <div className="text-muted-foreground">
+          <p className="text-lg font-medium">Not Connected</p>
+          <p className="text-sm">Connect to an FTP server to get started</p>
+        </div>
+        <Button onClick={() => setConnectionDialogOpen(true)}>
+          Connect to Server
+        </Button>
+      </div>
+    </div>
+  );
 
   return (
     <SidebarProvider defaultOpen={true}>
@@ -270,16 +326,26 @@ const Index = () => {
                   <Button
                     variant="ghost"
                     size="sm"
-                    onClick={handleUploadClick}
+                    onClick={() => setUploadDialogOpen(true)}
+                    title="Upload Files"
                   >
                     <Upload className="h-4 w-4" />
                   </Button>
                   <Button
                     variant="ghost"
                     size="sm"
-                    onClick={handleNewFolder}
+                    onClick={() => setCreateFolderOpen(true)}
+                    title="Create New Folder"
                   >
                     <FolderPlus className="h-4 w-4" />
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setCreateFileOpen(true)}
+                    title="Create New File"
+                  >
+                    <FilePlus className="h-4 w-4" />
                   </Button>
                   {selectedFile && selectedFile.name !== '..' && (
                     <Button
@@ -318,33 +384,18 @@ const Index = () => {
                 onDrop={handleDrop}
               >
                 {session ? (
-                  <FileList
-                    files={files}
-                    onFileClick={handleFileClick}
-                    onFileDoubleClick={handleFileDoubleClick}
-                    onDownload={handleDownloadFile}
-                    onDelete={(file) => {
-                      if (confirm(`Delete ${file.name}?`)) {
-                        deleteFile(file.path);
-                      }
-                    }}
-                    onEdit={handleEditFile}
-                    onOpen={handleOpenFolder}
-                    onProperties={handleShowProperties}
-                    selectedFile={selectedFile}
-                  />
-                ) : (
-                  <div className="flex items-center justify-center h-full">
-                    <div className="text-center space-y-4">
-                      <div className="text-muted-foreground">
-                        <p className="text-lg font-medium">Not Connected</p>
-                        <p className="text-sm">Connect to an FTP server to get started</p>
-                      </div>
-                      <Button onClick={() => setConnectionDialogOpen(true)}>
-                        Connect to Server
-                      </Button>
+                  <BackgroundContextMenu
+                    onCreateFile={() => setCreateFileOpen(true)}
+                    onCreateFolder={() => setCreateFolderOpen(true)}
+                    onUpload={() => setUploadDialogOpen(true)}
+                    onRefresh={refresh}
+                  >
+                    <div className="h-full">
+                      {fileExplorerContent}
                     </div>
-                  </div>
+                  </BackgroundContextMenu>
+                ) : (
+                  fileExplorerContent
                 )}
 
                 {dragActive && session && (
@@ -418,6 +469,35 @@ const Index = () => {
           open={savedConnectionsOpen}
           onOpenChange={setSavedConnectionsOpen}
           onConnect={handleConnect}
+        />
+
+        {/* Custom Dialogs */}
+        <CreateFolderDialog
+          open={createFolderOpen}
+          onOpenChange={setCreateFolderOpen}
+          onCreateFolder={handleCreateFolder}
+        />
+        <CreateFileDialog
+          open={createFileOpen}
+          onOpenChange={setCreateFileOpen}
+          onCreateFile={handleCreateFile}
+        />
+        <UploadDialog
+          open={uploadDialogOpen}
+          onOpenChange={setUploadDialogOpen}
+          onUpload={handleUploadFiles}
+        />
+        <RenameFolderDialog
+          open={!!renameFolderFile}
+          onOpenChange={(open) => !open && setRenameFolderFile(null)}
+          file={renameFolderFile}
+          onRename={handleRenameFolder}
+        />
+        <DownloadFolderDialog
+          open={!!downloadFolderFile}
+          onOpenChange={(open) => !open && setDownloadFolderFile(null)}
+          folder={downloadFolderFile}
+          onDownload={handleDownloadFolder}
         />
 
         {/* Auth Dialog with blur overlay */}
