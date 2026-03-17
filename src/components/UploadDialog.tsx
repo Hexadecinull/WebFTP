@@ -1,5 +1,5 @@
 import { useState, useRef, useCallback } from 'react';
-import { Upload } from 'lucide-react';
+import { Upload, FolderUp } from 'lucide-react';
 import {
   Dialog,
   DialogContent,
@@ -19,6 +19,7 @@ export const UploadDialog = ({ open, onOpenChange, onUpload }: UploadDialogProps
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
   const [dragActive, setDragActive] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
+  const folderInputRef = useRef<HTMLInputElement>(null);
 
   const handleFiles = useCallback((files: FileList | null) => {
     if (files) {
@@ -26,11 +27,51 @@ export const UploadDialog = ({ open, onOpenChange, onUpload }: UploadDialogProps
     }
   }, []);
 
-  const handleDrop = useCallback((e: React.DragEvent) => {
+  const handleDrop = useCallback(async (e: React.DragEvent) => {
     e.preventDefault();
     setDragActive(false);
-    handleFiles(e.dataTransfer.files);
+    
+    const items = e.dataTransfer.items;
+    if (items) {
+      const filePromises: Promise<File[]>[] = [];
+      for (let i = 0; i < items.length; i++) {
+        const item = items[i].webkitGetAsEntry?.();
+        if (item) {
+          filePromises.push(traverseEntry(item));
+        }
+      }
+      const allFiles = (await Promise.all(filePromises)).flat();
+      if (allFiles.length > 0) {
+        setSelectedFiles(prev => [...prev, ...allFiles]);
+      }
+    } else {
+      handleFiles(e.dataTransfer.files);
+    }
   }, [handleFiles]);
+
+  const traverseEntry = (entry: FileSystemEntry): Promise<File[]> => {
+    return new Promise((resolve) => {
+      if (entry.isFile) {
+        (entry as FileSystemFileEntry).file((file) => {
+          // Preserve relative path
+          const fileWithPath = new File([file], entry.fullPath.replace(/^\//, ''), { type: file.type, lastModified: file.lastModified });
+          resolve([fileWithPath]);
+        });
+      } else if (entry.isDirectory) {
+        const dirReader = (entry as FileSystemDirectoryEntry).createReader();
+        dirReader.readEntries(async (entries) => {
+          const files: File[] = [];
+          for (const child of entries) {
+            const childFiles = await traverseEntry(child);
+            files.push(...childFiles);
+          }
+          resolve(files);
+        });
+      } else {
+        resolve([]);
+      }
+    });
+  };
 
   const handleSubmit = () => {
     if (selectedFiles.length > 0) {
@@ -72,7 +113,7 @@ export const UploadDialog = ({ open, onOpenChange, onUpload }: UploadDialogProps
           >
             <Upload className="h-10 w-10 mx-auto mb-3 text-muted-foreground" />
             <p className="text-sm font-medium">
-              Drag & drop your file(s) here or click to select files
+              Drag & drop your file(s) or folders here or click to select files
             </p>
             <p className="text-xs text-muted-foreground mt-1">
               Any file type supported
@@ -84,6 +125,26 @@ export const UploadDialog = ({ open, onOpenChange, onUpload }: UploadDialogProps
               className="hidden"
               onChange={(e) => handleFiles(e.target.files)}
             />
+            <input
+              ref={folderInputRef}
+              type="file"
+              multiple
+              className="hidden"
+              {...({ webkitdirectory: '', directory: '' } as any)}
+              onChange={(e) => handleFiles(e.target.files)}
+            />
+          </div>
+
+          <div className="mt-3 flex justify-center">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={(e) => { e.stopPropagation(); folderInputRef.current?.click(); }}
+              className="gap-2"
+            >
+              <FolderUp className="h-4 w-4" />
+              Select Folder
+            </Button>
           </div>
 
           {selectedFiles.length > 0 && (

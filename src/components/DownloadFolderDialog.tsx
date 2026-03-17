@@ -52,6 +52,8 @@ export const DownloadFolderDialog = ({ open, onOpenChange, folder, onDownload }:
                 <SelectItem value="zip">ZIP (.zip)</SelectItem>
                 <SelectItem value="tar">TAR (.tar)</SelectItem>
                 <SelectItem value="tar.gz">TAR.GZ (.tar.gz)</SelectItem>
+                <SelectItem value="rar">RAR (.rar)</SelectItem>
+                <SelectItem value="7z">7Z (.7z)</SelectItem>
               </SelectContent>
             </Select>
           </div>

@@ -1,7 +1,7 @@
 // View Layer - File Editor Component with Syntax Highlighting
 
-import { useState, useEffect } from 'react';
-import { X, Save, Download } from 'lucide-react';
+import { useState, useEffect, useMemo } from 'react';
+import { X, Save, Download, Code, Eye } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { toast } from '@/hooks/use-toast';
 import CodeMirror from '@uiw/react-codemirror';
@@ -9,6 +9,7 @@ import { getLanguageExtension } from '@/lib/editorLanguages';
 import { oneDark } from '@codemirror/theme-one-dark';
 import { EditorView } from '@codemirror/view';
 import { useTheme } from '@/contexts/ThemeContext';
+import ReactMarkdown from 'react-markdown';
 
 interface FileEditorProps {
   filename: string;
@@ -16,6 +17,11 @@ interface FileEditorProps {
   onSave: (content: string) => Promise<void>;
   onClose: () => void;
 }
+
+const isMarkdownFile = (filename: string) => {
+  const ext = filename.split('.').pop()?.toLowerCase();
+  return ext === 'md' || ext === 'markdown' || ext === 'mdx';
+};
 
 export const FileEditor = ({
   filename,
@@ -26,7 +32,10 @@ export const FileEditor = ({
   const [content, setContent] = useState(initialContent);
   const [isSaving, setIsSaving] = useState(false);
   const [hasChanges, setHasChanges] = useState(false);
+  const [mdView, setMdView] = useState<'code' | 'preview'>('code');
   const { theme } = useTheme();
+
+  const isMarkdown = useMemo(() => isMarkdownFile(filename), [filename]);
 
   useEffect(() => {
     setHasChanges(content !== initialContent);
@@ -88,6 +97,32 @@ export const FileEditor = ({
                 Modified
               </span>
             )}
+            {isMarkdown && (
+              <div className="flex items-center rounded-md border border-border overflow-hidden ml-2">
+                <button
+                  onClick={() => setMdView('code')}
+                  className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium transition-colors ${
+                    mdView === 'code'
+                      ? 'bg-primary text-primary-foreground'
+                      : 'bg-card text-muted-foreground hover:text-foreground hover:bg-accent/50'
+                  }`}
+                >
+                  <Code className="h-3.5 w-3.5" />
+                  Code
+                </button>
+                <button
+                  onClick={() => setMdView('preview')}
+                  className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium transition-colors border-l border-border ${
+                    mdView === 'preview'
+                      ? 'bg-primary text-primary-foreground'
+                      : 'bg-card text-muted-foreground hover:text-foreground hover:bg-accent/50'
+                  }`}
+                >
+                  <Eye className="h-3.5 w-3.5" />
+                  Preview
+                </button>
+              </div>
+            )}
           </div>
           
           <div className="flex items-center gap-2">
@@ -118,38 +153,44 @@ export const FileEditor = ({
           </div>
         </div>
 
-        {/* Editor */}
+        {/* Editor / Preview */}
         <div className="flex-1 overflow-hidden">
-          <CodeMirror
-            value={content}
-            height="100%"
-            theme={theme === 'dark' ? oneDark : undefined}
-            extensions={languageExtension ? [languageExtension, EditorView.lineWrapping] : [EditorView.lineWrapping]}
-            onChange={(value) => setContent(value)}
-            basicSetup={{
-              lineNumbers: true,
-              highlightActiveLineGutter: true,
-              highlightSpecialChars: true,
-              foldGutter: true,
-              drawSelection: true,
-              dropCursor: true,
-              allowMultipleSelections: true,
-              indentOnInput: true,
-              syntaxHighlighting: true,
-              bracketMatching: true,
-              closeBrackets: true,
-              autocompletion: true,
-              rectangularSelection: true,
-              crosshairCursor: true,
-              highlightActiveLine: true,
-              highlightSelectionMatches: true,
-              closeBracketsKeymap: true,
-              searchKeymap: true,
-              foldKeymap: true,
-              completionKeymap: true,
-              lintKeymap: true,
-            }}
-          />
+          {isMarkdown && mdView === 'preview' ? (
+            <div className="h-full overflow-auto p-6 prose prose-sm dark:prose-invert max-w-none">
+              <ReactMarkdown>{content}</ReactMarkdown>
+            </div>
+          ) : (
+            <CodeMirror
+              value={content}
+              height="100%"
+              theme={theme === 'dark' ? oneDark : undefined}
+              extensions={languageExtension ? [languageExtension, EditorView.lineWrapping] : [EditorView.lineWrapping]}
+              onChange={(value) => setContent(value)}
+              basicSetup={{
+                lineNumbers: true,
+                highlightActiveLineGutter: true,
+                highlightSpecialChars: true,
+                foldGutter: true,
+                drawSelection: true,
+                dropCursor: true,
+                allowMultipleSelections: true,
+                indentOnInput: true,
+                syntaxHighlighting: true,
+                bracketMatching: true,
+                closeBrackets: true,
+                autocompletion: true,
+                rectangularSelection: true,
+                crosshairCursor: true,
+                highlightActiveLine: true,
+                highlightSelectionMatches: true,
+                closeBracketsKeymap: true,
+                searchKeymap: true,
+                foldKeymap: true,
+                completionKeymap: true,
+                lintKeymap: true,
+              }}
+            />
+          )}
         </div>
       </div>
     </div>
