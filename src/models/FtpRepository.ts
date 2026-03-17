@@ -407,10 +407,10 @@ namespace WebFTPDemo
             Console.WriteLine("Electronics:");
             foreach (var product in service.GetByCategory("Electronics"))
             {
-                Console.WriteLine($"  {product.Name}: ${product.Price}");
+                Console.WriteLine("  " + product.Name + ": $" + product.Price);
             }
 
-            Console.WriteLine($"\\nTotal inventory value: ${service.GetTotal()}");
+            Console.WriteLine("Total inventory value: $" + service.GetTotal());
             await Task.Delay(100);
         }
     }
