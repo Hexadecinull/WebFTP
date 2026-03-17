@@ -72,6 +72,12 @@ export const FileContextMenu = ({
                 <span>Edit File</span>
               </ContextMenuItem>
             )}
+            {file.name !== '..' && onRename && (
+              <ContextMenuItem onClick={() => onRename(file)} className="gap-2">
+                <Edit className="h-4 w-4" />
+                <span>Rename</span>
+              </ContextMenuItem>
+            )}
           </>
         )}
         
