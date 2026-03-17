@@ -40,7 +40,7 @@ export const RenameFolderDialog = ({ open, onOpenChange, file, onRename }: Renam
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Edit className="h-5 w-5 text-accent" />
-            Rename Folder
+            Rename {file?.isDirectory ? 'Folder' : 'File'}
           </DialogTitle>
         </DialogHeader>
         <form onSubmit={handleSubmit}>
