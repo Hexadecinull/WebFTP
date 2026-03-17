@@ -12,7 +12,7 @@ import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { FtpEntry } from '@/types/ftp';
 
-interface RenameFolderDialogProps extends React.PropsWithChildren {
+interface RenameFolderDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   file: FtpEntry | null;
