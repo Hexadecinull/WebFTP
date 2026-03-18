@@ -10,6 +10,8 @@ import { oneDark } from '@codemirror/theme-one-dark';
 import { EditorView } from '@codemirror/view';
 import { useTheme } from '@/contexts/ThemeContext';
 import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
+import rehypeHighlight from 'rehype-highlight';
 
 interface FileEditorProps {
   filename: string;
@@ -156,8 +158,15 @@ export const FileEditor = ({
         {/* Editor / Preview */}
         <div className="flex-1 overflow-hidden">
           {isMarkdown && mdView === 'preview' ? (
-            <div className="h-full overflow-auto p-6 prose prose-sm dark:prose-invert max-w-none">
-              <ReactMarkdown>{content}</ReactMarkdown>
+            <div className="h-full overflow-auto p-8 markdown-preview">
+              <div className="max-w-4xl mx-auto">
+                <ReactMarkdown
+                  remarkPlugins={[remarkGfm]}
+                  rehypePlugins={[rehypeHighlight]}
+                >
+                  {content}
+                </ReactMarkdown>
+              </div>
             </div>
           ) : (
             <CodeMirror

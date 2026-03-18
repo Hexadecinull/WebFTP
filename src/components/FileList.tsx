@@ -1,11 +1,11 @@
 // View Layer - File List Component
 
-import { File, Folder, ArrowLeft } from 'lucide-react';
+import { ArrowLeft } from 'lucide-react';
 import { FtpEntry } from '@/types/ftp';
 import { formatBytes, formatDate, isEditableFile } from '@/lib/fileUtils';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { FileContextMenu } from './FileContextMenu';
-
+import { FileIcon } from './FileIcon';
 interface FileListProps {
   files: FtpEntry[];
   onFileClick: (file: FtpEntry) => void;
@@ -66,10 +66,8 @@ export const FileList = ({
             <div className="flex-shrink-0">
               {file.name === '..' ? (
                 <ArrowLeft className="h-5 w-5 text-muted-foreground" />
-              ) : file.isDirectory ? (
-                <Folder className="h-5 w-5 text-accent" />
               ) : (
-                <File className="h-5 w-5 text-muted-foreground" />
+                <FileIcon filename={file.name} isDirectory={file.isDirectory} />
               )}
             </div>
 
