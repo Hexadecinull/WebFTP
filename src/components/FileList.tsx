@@ -66,10 +66,8 @@ export const FileList = ({
             <div className="flex-shrink-0">
               {file.name === '..' ? (
                 <ArrowLeft className="h-5 w-5 text-muted-foreground" />
-              ) : file.isDirectory ? (
-                <Folder className="h-5 w-5 text-accent" />
               ) : (
-                <File className="h-5 w-5 text-muted-foreground" />
+                <FileIcon filename={file.name} isDirectory={file.isDirectory} />
               )}
             </div>
 
