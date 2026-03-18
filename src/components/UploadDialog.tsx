@@ -135,17 +135,6 @@ export const UploadDialog = ({ open, onOpenChange, onUpload }: UploadDialogProps
             />
           </div>
 
-          <div className="mt-3 flex justify-center">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={(e) => { e.stopPropagation(); folderInputRef.current?.click(); }}
-              className="gap-2"
-            >
-              <FolderUp className="h-4 w-4" />
-              Select Folder
-            </Button>
-          </div>
 
           {selectedFiles.length > 0 && (
             <div className="mt-4 space-y-2 max-h-40 overflow-y-auto">
