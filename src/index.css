@@ -277,12 +277,16 @@ All colors MUST be HSL.
   padding: 16px;
   overflow-x: auto;
   margin: 0 0 16px;
+  line-height: 1.45;
 }
 .markdown-preview pre code {
   background: transparent;
   padding: 0;
   border-radius: 0;
   font-size: 85%;
+  line-height: inherit;
+  word-wrap: normal;
+  white-space: pre;
 }
 
 /* Tables (GFM) */
