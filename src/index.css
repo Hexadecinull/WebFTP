@@ -126,6 +126,26 @@ All colors MUST be HSL.
     font-feature-settings: "rlig" 1, "calt" 1;
   }
 
+  /* Prevent text selection on interactive UI elements */
+  button,
+  [role="button"],
+  nav,
+  aside,
+  [data-no-select],
+  .file-list-row,
+  .sidebar,
+  [data-sidebar],
+  [data-radix-collection-item] {
+    -webkit-user-select: none;
+    user-select: none;
+  }
+
+  /* Allow selection only in editable areas */
+  input, textarea, [contenteditable="true"], .cm-editor, .markdown-preview {
+    -webkit-user-select: text;
+    user-select: text;
+  }
+
   button:focus-visible, 
   a:focus-visible,
   [role="button"]:focus-visible {
