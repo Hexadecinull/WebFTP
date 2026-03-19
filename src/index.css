@@ -126,6 +126,26 @@ All colors MUST be HSL.
     font-feature-settings: "rlig" 1, "calt" 1;
   }
 
+  /* Prevent text selection on interactive UI elements */
+  button,
+  [role="button"],
+  nav,
+  aside,
+  [data-no-select],
+  .file-list-row,
+  .sidebar,
+  [data-sidebar],
+  [data-radix-collection-item] {
+    -webkit-user-select: none;
+    user-select: none;
+  }
+
+  /* Allow selection only in editable areas */
+  input, textarea, [contenteditable="true"], .cm-editor, .markdown-preview {
+    -webkit-user-select: text;
+    user-select: text;
+  }
+
   button:focus-visible, 
   a:focus-visible,
   [role="button"]:focus-visible {
@@ -159,16 +179,19 @@ All colors MUST be HSL.
 /* GitHub-flavored Markdown preview styles */
 .markdown-preview {
   color: hsl(var(--foreground));
-  font-size: 14px;
-  line-height: 1.6;
+  font-size: 16px;
+  line-height: 1.7;
+  word-wrap: break-word;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans", Helvetica, Arial, sans-serif;
 }
 
 .markdown-preview h1 {
   font-size: 2em;
-  font-weight: 700;
+  font-weight: 600;
   border-bottom: 1px solid hsl(var(--border));
   padding-bottom: 0.3em;
-  margin: 0.67em 0;
+  margin: 24px 0 16px;
+  line-height: 1.25;
 }
 
 .markdown-preview h2 {
@@ -176,18 +199,20 @@ All colors MUST be HSL.
   font-weight: 600;
   border-bottom: 1px solid hsl(var(--border));
   padding-bottom: 0.3em;
-  margin: 1em 0 0.5em;
+  margin: 24px 0 16px;
+  line-height: 1.25;
 }
 
 .markdown-preview h3 {
   font-size: 1.25em;
   font-weight: 600;
-  margin: 1em 0 0.5em;
+  margin: 24px 0 16px;
+  line-height: 1.25;
 }
 
-.markdown-preview h4 { font-size: 1em; font-weight: 600; margin: 1em 0 0.5em; }
-.markdown-preview h5 { font-size: 0.875em; font-weight: 600; margin: 1em 0 0.5em; }
-.markdown-preview h6 { font-size: 0.85em; font-weight: 600; color: hsl(var(--muted-foreground)); margin: 1em 0 0.5em; }
+.markdown-preview h4 { font-size: 1em; font-weight: 600; margin: 24px 0 16px; line-height: 1.25; }
+.markdown-preview h5 { font-size: 0.875em; font-weight: 600; margin: 24px 0 16px; line-height: 1.25; }
+.markdown-preview h6 { font-size: 0.85em; font-weight: 600; color: hsl(var(--muted-foreground)); margin: 24px 0 16px; line-height: 1.25; }
 
 .markdown-preview p {
   margin: 0 0 16px;
@@ -252,12 +277,16 @@ All colors MUST be HSL.
   padding: 16px;
   overflow-x: auto;
   margin: 0 0 16px;
+  line-height: 1.45;
 }
 .markdown-preview pre code {
   background: transparent;
   padding: 0;
   border-radius: 0;
   font-size: 85%;
+  line-height: inherit;
+  word-wrap: normal;
+  white-space: pre;
 }
 
 /* Tables (GFM) */
