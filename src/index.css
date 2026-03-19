@@ -199,7 +199,8 @@ All colors MUST be HSL.
   font-weight: 600;
   border-bottom: 1px solid hsl(var(--border));
   padding-bottom: 0.3em;
-  margin: 1em 0 0.5em;
+  margin: 24px 0 16px;
+  line-height: 1.25;
 }
 
 .markdown-preview h3 {
