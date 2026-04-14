@@ -126,22 +126,16 @@ All colors MUST be HSL.
     font-feature-settings: "rlig" 1, "calt" 1;
   }
 
-  /* Prevent text selection on interactive UI elements */
-  button,
-  [role="button"],
-  nav,
-  aside,
-  [data-no-select],
-  .file-list-row,
-  .sidebar,
-  [data-sidebar],
-  [data-radix-collection-item] {
+  /* Prevent text selection on ALL UI elements by default */
+  * {
     -webkit-user-select: none;
     user-select: none;
   }
 
-  /* Allow selection only in editable areas */
-  input, textarea, [contenteditable="true"], .cm-editor, .markdown-preview {
+  /* Allow selection only in editable/content areas */
+  input, textarea, [contenteditable="true"], .cm-editor, .cm-editor *,
+  .markdown-preview, .markdown-preview *,
+  pre, pre *, code {
     -webkit-user-select: text;
     user-select: text;
   }
