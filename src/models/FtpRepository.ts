@@ -1,5 +1,10 @@
 // Model Layer - FTP Repository
 
+// TODO: The FtpRepositoryImpl below is a fully in-memory virtual filesystem used for
+// demo/preview purposes only. Real protocol support (FTP, FTPS, SFTP, SMB, WebDAV)
+// requires a backend proxy server (e.g. Node.js + basic-ftp / ssh2-sftp-client).
+// See CONTRIBUTING.md for architecture notes on implementing real connections.
+
 import { FtpEntry, ConnectOptions, Session } from '@/types/ftp';
 
 export type ProgressCallback = (loaded: number, total?: number) => void;

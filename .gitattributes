@@ -1,0 +1,42 @@
+# Normalize all text files to LF on commit
+* text=auto eol=lf
+
+# Explicitly mark source files as text
+*.ts      text eol=lf
+*.tsx     text eol=lf
+*.js      text eol=lf
+*.jsx     text eol=lf
+*.json    text eol=lf
+*.css     text eol=lf
+*.html    text eol=lf
+*.md      text eol=lf
+*.yml     text eol=lf
+*.yaml    text eol=lf
+*.toml    text eol=lf
+*.sql     text eol=lf
+*.sh      text eol=lf
+*.env     text eol=lf
+*.gitignore text eol=lf
+*.htaccess  text eol=lf
+
+# Binary files — never diff or merge these
+*.png     binary
+*.jpg     binary
+*.jpeg    binary
+*.gif     binary
+*.webp    binary
+*.ico     binary
+*.woff    binary
+*.woff2   binary
+*.ttf     binary
+*.otf     binary
+*.eot     binary
+*.zip     binary
+*.tar     binary
+*.gz      binary
+*.lockb   binary
+
+# Lock files — treat as text but don't diff
+bun.lock     text eol=lf -diff
+bun.lockb    binary
+package-lock.json text eol=lf -diff

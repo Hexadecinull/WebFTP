@@ -825,7 +825,7 @@ export const Settings = ({ onClose }: SettingsProps) => {
                   <div className="max-w-md mx-auto space-y-4 text-left">
                     <div className="p-4 border border-border rounded-lg">
                       <Label className="text-base font-semibold">Authors</Label>
-                      <p className="text-sm text-muted-foreground mt-1">Lovable AI & User Collaboration</p>
+                      <p className="text-sm text-muted-foreground mt-1">Hexadecinull</p>
                     </div>
                     
                     <div className="p-4 border border-border rounded-lg">
@@ -836,7 +836,7 @@ export const Settings = ({ onClose }: SettingsProps) => {
                         <span className="px-2 py-1 bg-primary/10 text-primary rounded text-xs font-medium">Tailwind CSS</span>
                         <span className="px-2 py-1 bg-primary/10 text-primary rounded text-xs font-medium">Vite</span>
                         <span className="px-2 py-1 bg-primary/10 text-primary rounded text-xs font-medium">CodeMirror</span>
-                        <span className="px-2 py-1 bg-primary/10 text-primary rounded text-xs font-medium">Lovable Cloud</span>
+                        <span className="px-2 py-1 bg-primary/10 text-primary rounded text-xs font-medium">Supabase</span>
                       </div>
                     </div>
                     
@@ -857,7 +857,7 @@ export const Settings = ({ onClose }: SettingsProps) => {
                       <p className="text-sm text-muted-foreground mt-1">
                         A modern, web-based FTP client with support for multiple protocols, 
                         inline file editing, and a beautiful user interface. Built with React 
-                        and powered by Lovable Cloud.
+                        and backed by Supabase.
                       </p>
                     </div>
                     
@@ -881,14 +881,12 @@ export const Settings = ({ onClose }: SettingsProps) => {
                       <p className="text-sm text-muted-foreground mt-1 mb-3">
                         Repository status badges
                       </p>
-                      {/* Add your shields.io badges here as img tags. Example:
-                        <img src="https://img.shields.io/github/stars/SSMG4/WebFTP?style=social" alt="GitHub stars" />
-                        <img src="https://img.shields.io/github/issues/SSMG4/WebFTP" alt="GitHub issues" />
-                        <img src="https://img.shields.io/github/forks/SSMG4/WebFTP?style=social" alt="GitHub forks" />
-                        <img src="https://img.shields.io/github/license/SSMG4/WebFTP" alt="License" />
-                      */}
                       <div className="flex flex-wrap gap-2">
-                        {/* Your badges will appear here */}
+                        <img src="https://img.shields.io/github/stars/Hexadecinull/WebFTP?style=social" alt="GitHub stars" />
+                        <img src="https://img.shields.io/github/issues/Hexadecinull/WebFTP" alt="GitHub issues" />
+                        <img src="https://img.shields.io/github/forks/Hexadecinull/WebFTP?style=social" alt="GitHub forks" />
+                        <img src="https://img.shields.io/github/license/Hexadecinull/WebFTP" alt="License" />
+                        <img src="https://github.com/Hexadecinull/WebFTP/actions/workflows/ci.yml/badge.svg" alt="CI status" />
                       </div>
                     </div>
 

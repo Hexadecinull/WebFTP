@@ -236,9 +236,6 @@ export default function Auth({ onClose }: { onClose?: () => void }) {
                   </DialogContent>
                 </Dialog>
 
-                {/* Spacer to match Sign Up form height */}
-                <div className="pt-[100px]" />
-
                 <Button type="submit" className="w-full" disabled={isLoading}>
                   {isLoading ? 'Signing in...' : 'Sign In'}
                 </Button>
