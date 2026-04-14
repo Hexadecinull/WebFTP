@@ -5,6 +5,7 @@ import { SidebarProvider, SidebarTrigger } from '@/components/ui/sidebar';
 import { AppSidebar } from '@/components/AppSidebar';
 import { ConnectionDialog } from '@/components/ConnectionDialog';
 import { FileList } from '@/components/FileList';
+import { FileGrid } from '@/components/FileGrid';
 import { TransferQueue } from '@/components/TransferQueue';
 import { Breadcrumb } from '@/components/Breadcrumb';
 import { FileEditor } from '@/components/FileEditor';
@@ -20,16 +21,17 @@ import { UploadDialog } from '@/components/UploadDialog';
 import { RenameFolderDialog } from '@/components/RenameFolderDialog';
 import { DownloadFolderDialog } from '@/components/DownloadFolderDialog';
 import { Button } from '@/components/ui/button';
-import { RefreshCw, Upload, FolderPlus, FilePlus, Trash2, Settings as SettingsIcon } from 'lucide-react';
+import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
+import { RefreshCw, Upload, FolderPlus, FilePlus, Trash2, Settings as SettingsIcon, List, LayoutGrid } from 'lucide-react';
 import { FtpEntry, ConnectOptions } from '@/types/ftp';
 import { isEditableFile } from '@/lib/fileUtils';
 import logo from '@/assets/logo.png';
 import { UserMenu } from '@/components/UserMenu';
 import Auth from '@/pages/Auth';
-import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { useAuth } from '@/contexts/AuthContext';
 import { useEasterEgg } from '@/hooks/useEasterEgg';
 import { toast } from '@/hooks/use-toast';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 // Model Layer
 import { FtpRepositoryImpl } from '@/models/FtpRepository';
@@ -43,6 +45,8 @@ import { useTransferQueue } from '@/presenters/useTransferQueue';
 const Index = () => {
   const { user } = useAuth();
   const { handleEmptyClick } = useEasterEgg();
+  const isMobile = useIsMobile();
+  
   // Initialize Model layer
   const ftpRepository = useMemo(() => new FtpRepositoryImpl(), []);
   const transferQueueManager = useMemo(() => new TransferQueueManager(), []);
@@ -83,6 +87,8 @@ const Index = () => {
   const [recentConnectionsOpen, setRecentConnectionsOpen] = useState(false);
   const [savedConnectionsOpen, setSavedConnectionsOpen] = useState(false);
   const [authDialogOpen, setAuthDialogOpen] = useState(false);
+  const [viewMode, setViewMode] = useState<'list' | 'grid'>('list');
+  const [showTransferQueue, setShowTransferQueue] = useState(!isMobile);
   
   // New dialog states
   const [createFolderOpen, setCreateFolderOpen] = useState(false);
@@ -90,6 +96,9 @@ const Index = () => {
   const [uploadDialogOpen, setUploadDialogOpen] = useState(false);
   const [renameFolderFile, setRenameFolderFile] = useState<FtpEntry | null>(null);
   const [downloadFolderFile, setDownloadFolderFile] = useState<FtpEntry | null>(null);
+
+  // Drag-and-drop file moving state
+  const [draggedFile, setDraggedFile] = useState<FtpEntry | null>(null);
 
   // Get user IP for guest recent connections
   const [userIP, setUserIP] = useState<string>('');
@@ -155,6 +164,9 @@ const Index = () => {
     e.preventDefault();
     setDragActive(false);
     
+    // If we're doing an internal file move, ignore the upload logic
+    if (draggedFile) return;
+    
     const files = e.dataTransfer.files;
     if (files && session) {
       Array.from(files).forEach(file => {
@@ -162,7 +174,7 @@ const Index = () => {
         startUpload(file, remotePath);
       });
     }
-  }, [currentPath, startUpload, session]);
+  }, [currentPath, startUpload, session, draggedFile]);
 
   const handleDeleteClick = useCallback(() => {
     if (selectedFile && selectedFile.name !== '..') {
@@ -181,10 +193,7 @@ const Index = () => {
     const filePath = `${currentPath}/${name}`.replace('//', '/');
     await writeFile(filePath, '');
     refresh();
-    toast({
-      title: 'File Created',
-      description: `Created file: ${name}`,
-    });
+    toast({ title: 'File Created', description: `Created file: ${name}` });
   }, [currentPath, writeFile, refresh]);
 
   const handleRenameFolder = useCallback(async (oldPath: string, newName: string) => {
@@ -194,16 +203,12 @@ const Index = () => {
   }, [renameFile]);
 
   const handleDownloadFolder = useCallback((folder: FtpEntry, format: string) => {
-    toast({
-      title: 'Download Started',
-      description: `Downloading ${folder.name} as .${format}...`,
-    });
+    toast({ title: 'Download Started', description: `Downloading ${folder.name} as .${format}...` });
     startDownload(folder.path, `${folder.name}.${format}`);
   }, [startDownload]);
 
   const handleEditFile = useCallback(async (file: FtpEntry) => {
     if (!isEditableFile(file.name)) return;
-    
     try {
       const content = await readFile(file.path);
       setEditingFile({ path: file.path, name: file.name, content });
@@ -214,7 +219,6 @@ const Index = () => {
 
   const handleSaveFile = useCallback(async (content: string) => {
     if (!editingFile) return;
-    
     await writeFile(editingFile.path, content);
     setEditingFile(null);
     refresh();
@@ -237,24 +241,54 @@ const Index = () => {
     setPropertiesFile(file);
   }, []);
 
+  // Drag-and-drop file move handlers
+  const handleFileDragStart = useCallback((e: React.DragEvent, file: FtpEntry) => {
+    setDraggedFile(file);
+    e.dataTransfer.effectAllowed = 'move';
+    e.dataTransfer.setData('text/plain', file.path);
+    // Style the ghost
+    const el = e.currentTarget as HTMLElement;
+    el.style.opacity = '0.5';
+    setTimeout(() => { el.style.opacity = ''; }, 0);
+  }, []);
+
+  const handleDropOnFolder = useCallback(async (e: React.DragEvent, folder: FtpEntry) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (!draggedFile || draggedFile.path === folder.path) {
+      setDraggedFile(null);
+      return;
+    }
+    const newPath = `${folder.path}/${draggedFile.name}`.replace('//', '/');
+    try {
+      await renameFile(draggedFile.path, newPath);
+      toast({ title: 'Moved', description: `Moved ${draggedFile.name} to ${folder.name}/` });
+    } catch (error) {
+      console.error('Move failed:', error);
+    }
+    setDraggedFile(null);
+  }, [draggedFile, renameFile]);
+
+  const commonFileProps = {
+    files,
+    onFileClick: handleFileClick,
+    onFileDoubleClick: handleFileDoubleClick,
+    onDownload: handleDownloadFile,
+    onDelete: (file: FtpEntry) => {
+      if (confirm(`Delete ${file.name}?`)) deleteFile(file.path);
+    },
+    onEdit: handleEditFile,
+    onOpen: handleOpenFolder,
+    onProperties: handleShowProperties,
+    onRename: (file: FtpEntry) => setRenameFolderFile(file),
+    onDownloadFolder: (file: FtpEntry) => setDownloadFolderFile(file),
+    selectedFile,
+    onDragStart: handleFileDragStart,
+    onDropOnFolder: handleDropOnFolder,
+  };
+
   const fileExplorerContent = session ? (
-    <FileList
-      files={files}
-      onFileClick={handleFileClick}
-      onFileDoubleClick={handleFileDoubleClick}
-      onDownload={handleDownloadFile}
-      onDelete={(file) => {
-        if (confirm(`Delete ${file.name}?`)) {
-          deleteFile(file.path);
-        }
-      }}
-      onEdit={handleEditFile}
-      onOpen={handleOpenFolder}
-      onProperties={handleShowProperties}
-      onRename={(file) => setRenameFolderFile(file)}
-      onDownloadFolder={(file) => setDownloadFolderFile(file)}
-      selectedFile={selectedFile}
-    />
+    viewMode === 'list' ? <FileList {...commonFileProps} /> : <FileGrid {...commonFileProps} />
   ) : (
     <div className="flex items-center justify-center h-full">
       <div className="text-center space-y-4">
@@ -270,7 +304,7 @@ const Index = () => {
   );
 
   return (
-    <SidebarProvider defaultOpen={true}>
+    <SidebarProvider defaultOpen={!isMobile}>
       <div className="flex h-screen w-full bg-background" onClick={handleEmptyClick}>
         <AppSidebar
           onNewConnection={() => setConnectionDialogOpen(true)}
@@ -279,89 +313,73 @@ const Index = () => {
           onShowRecentConnections={() => setRecentConnectionsOpen(true)}
         />
 
-        <div className="flex-1 flex flex-col overflow-hidden">
+        <div className="flex-1 flex flex-col overflow-hidden min-w-0">
           {/* Header */}
-          <div className="h-14 border-b border-border flex items-center justify-between px-4 bg-card">
-            <div className="flex items-center gap-4">
-              <img src={logo} alt="WebFTP" className="h-8 w-8" />
-              <h1 className="text-lg font-semibold">WebFTP</h1>
-              {session && (
-                <span className="text-sm text-muted-foreground">
+          <div className="h-14 border-b border-border flex items-center justify-between px-2 sm:px-4 bg-card shrink-0">
+            <div className="flex items-center gap-2 sm:gap-4 min-w-0">
+              <img src={logo} alt="WebFTP" className="h-7 w-7 sm:h-8 sm:w-8 shrink-0" />
+              <h1 className="text-base sm:text-lg font-semibold truncate">WebFTP</h1>
+              {session && !isMobile && (
+                <span className="text-sm text-muted-foreground truncate">
                   Connected to {session.host}
                 </span>
               )}
             </div>
 
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-1 sm:gap-2 shrink-0">
               {!user && (
-                <Button
-                  variant="default"
-                  size="sm"
-                  onClick={() => setAuthDialogOpen(true)}
-                >
+                <Button variant="default" size="sm" onClick={() => setAuthDialogOpen(true)}>
                   Sign In
                 </Button>
               )}
               
               <UserMenu />
               
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => setSettingsOpen(true)}
-              >
+              <Button variant="ghost" size="sm" onClick={() => setSettingsOpen(true)}>
                 <SettingsIcon className="h-4 w-4" />
               </Button>
               
               {session && (
                 <>
-                  <Button
-                    variant="ghost"
+                  {/* View Mode Toggle */}
+                  <ToggleGroup
+                    type="single"
+                    value={viewMode}
+                    onValueChange={(v) => v && setViewMode(v as 'list' | 'grid')}
+                    className="border border-border rounded-md"
                     size="sm"
-                    onClick={refresh}
-                    disabled={isLoading}
                   >
+                    <ToggleGroupItem value="list" aria-label="List view" className="h-8 w-8 p-0">
+                      <List className="h-4 w-4" />
+                    </ToggleGroupItem>
+                    <ToggleGroupItem value="grid" aria-label="Grid view" className="h-8 w-8 p-0">
+                      <LayoutGrid className="h-4 w-4" />
+                    </ToggleGroupItem>
+                  </ToggleGroup>
+
+                  <Button variant="ghost" size="sm" onClick={refresh} disabled={isLoading}>
                     <RefreshCw className={`h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} />
                   </Button>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => setUploadDialogOpen(true)}
-                    title="Upload Files"
-                  >
+                  <Button variant="ghost" size="sm" onClick={() => setUploadDialogOpen(true)} title="Upload Files">
                     <Upload className="h-4 w-4" />
                   </Button>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => setCreateFolderOpen(true)}
-                    title="Create New Folder"
-                  >
-                    <FolderPlus className="h-4 w-4" />
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => setCreateFileOpen(true)}
-                    title="Create New File"
-                  >
-                    <FilePlus className="h-4 w-4" />
-                  </Button>
+                  {!isMobile && (
+                    <>
+                      <Button variant="ghost" size="sm" onClick={() => setCreateFolderOpen(true)} title="Create New Folder">
+                        <FolderPlus className="h-4 w-4" />
+                      </Button>
+                      <Button variant="ghost" size="sm" onClick={() => setCreateFileOpen(true)} title="Create New File">
+                        <FilePlus className="h-4 w-4" />
+                      </Button>
+                    </>
+                  )}
                   {selectedFile && selectedFile.name !== '..' && (
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={handleDeleteClick}
-                    >
+                    <Button variant="ghost" size="sm" onClick={handleDeleteClick}>
                       <Trash2 className="h-4 w-4" />
                     </Button>
                   )}
-                  <Button
-                    variant="destructive"
-                    size="sm"
-                    onClick={disconnect}
-                  >
-                    Disconnect
+                  <Button variant="destructive" size="sm" onClick={disconnect}>
+                    {isMobile ? 'DC' : 'Disconnect'}
                   </Button>
                 </>
               )}
@@ -371,14 +389,14 @@ const Index = () => {
           {/* Main Content */}
           <div className="flex-1 flex overflow-hidden">
             {/* File Explorer */}
-            <div className="flex-1 flex flex-col border-r border-border">
+            <div className="flex-1 flex flex-col min-w-0">
               {session && <Breadcrumb path={currentPath} onNavigate={navigateToPath} />}
               
               <div
                 className={`flex-1 relative ${dragActive ? 'bg-accent/20' : ''}`}
                 onDragOver={(e) => {
                   e.preventDefault();
-                  setDragActive(true);
+                  if (!draggedFile) setDragActive(true);
                 }}
                 onDragLeave={() => setDragActive(false)}
                 onDrop={handleDrop}
@@ -398,7 +416,7 @@ const Index = () => {
                   fileExplorerContent
                 )}
 
-                {dragActive && session && (
+                {dragActive && session && !draggedFile && (
                   <div className="absolute inset-0 bg-accent/20 border-2 border-dashed border-primary flex items-center justify-center pointer-events-none">
                     <div className="text-center">
                       <Upload className="h-12 w-12 mx-auto mb-2 text-primary" />
@@ -409,16 +427,18 @@ const Index = () => {
               </div>
             </div>
 
-            {/* Transfer Queue */}
-            <div className="w-80 border-l border-border bg-card">
-              <TransferQueue
-                transfers={transfers}
-                onPause={pauseTransfer}
-                onResume={resumeTransfer}
-                onCancel={cancelTransfer}
-                onClearCompleted={clearCompleted}
-              />
-            </div>
+            {/* Transfer Queue - responsive */}
+            {!isMobile && (
+              <div className="w-64 lg:w-80 border-l border-border bg-card shrink-0">
+                <TransferQueue
+                  transfers={transfers}
+                  onPause={pauseTransfer}
+                  onResume={resumeTransfer}
+                  onCancel={cancelTransfer}
+                  onClearCompleted={clearCompleted}
+                />
+              </div>
+            )}
           </div>
         </div>
 
