@@ -1,11 +1,12 @@
-import { ArrowLeft } from 'lucide-react';
 import { FtpEntry } from '@/types/ftp';
-import { formatBytes, formatDate, isEditableFile } from '@/lib/fileUtils';
+import { formatBytes } from '@/lib/fileUtils';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { FileContextMenu } from './FileContextMenu';
 import { FileIcon } from './FileIcon';
+import { ArrowLeft } from 'lucide-react';
+import { isEditableFile } from '@/lib/fileUtils';
 
-interface FileListProps {
+interface FileGridProps {
   files: FtpEntry[];
   onFileClick: (file: FtpEntry) => void;
   onFileDoubleClick: (file: FtpEntry) => void;
@@ -21,7 +22,7 @@ interface FileListProps {
   onDropOnFolder?: (e: React.DragEvent, folder: FtpEntry) => void;
 }
 
-export const FileList = ({
+export const FileGrid = ({
   files,
   onFileClick,
   onFileDoubleClick,
@@ -35,10 +36,10 @@ export const FileList = ({
   selectedFile,
   onDragStart,
   onDropOnFolder,
-}: FileListProps) => {
+}: FileGridProps) => {
   return (
     <ScrollArea className="h-full">
-      <div className="divide-y divide-border">
+      <div className="p-4 grid grid-cols-[repeat(auto-fill,minmax(100px,1fr))] gap-3">
         {files.map((file) => (
           <FileContextMenu
             key={file.path}
@@ -60,21 +61,22 @@ export const FileList = ({
               onDragOver={(e) => {
                 if (file.isDirectory && file.name !== '..') {
                   e.preventDefault();
-                  e.currentTarget.classList.add('bg-primary/20');
+                  e.currentTarget.classList.add('ring-2', 'ring-primary');
                 }
               }}
               onDragLeave={(e) => {
-                e.currentTarget.classList.remove('bg-primary/20');
+                e.currentTarget.classList.remove('ring-2', 'ring-primary');
               }}
               onDrop={(e) => {
-                e.currentTarget.classList.remove('bg-primary/20');
+                e.currentTarget.classList.remove('ring-2', 'ring-primary');
                 if (file.isDirectory && file.name !== '..' && onDropOnFolder) {
                   onDropOnFolder(e, file);
                 }
               }}
               className={`
-                flex items-center gap-3 px-4 py-3 cursor-pointer transition-colors hover:bg-accent/50
-                ${selectedFile?.path === file.path ? 'bg-primary/10 border-l-2 border-primary' : ''}
+                flex flex-col items-center gap-1.5 p-3 rounded-lg cursor-pointer transition-all
+                hover:bg-accent/50
+                ${selectedFile?.path === file.path ? 'bg-primary/10 ring-1 ring-primary' : ''}
               `}
               onClick={() => onFileClick(file)}
               onDoubleClick={() => {
@@ -85,37 +87,23 @@ export const FileList = ({
                 }
               }}
             >
-              <div className="flex-shrink-0">
+              <div className="h-10 w-10 flex items-center justify-center">
                 {file.name === '..' ? (
-                  <ArrowLeft className="h-5 w-5 text-muted-foreground" />
+                  <ArrowLeft className="h-6 w-6 text-muted-foreground" />
                 ) : (
-                  <FileIcon filename={file.name} isDirectory={file.isDirectory} />
+                  <FileIcon filename={file.name} isDirectory={file.isDirectory} className="scale-150" />
                 )}
               </div>
-
-              <div className="flex-1 min-w-0">
-                <p className="font-medium truncate">{file.name}</p>
-                {file.permissions && (
-                  <p className="text-xs text-muted-foreground font-mono">
-                    {file.permissions}
-                  </p>
-                )}
-              </div>
-
-              <div className="flex-shrink-0 text-right text-sm text-muted-foreground">
-                {file.size !== undefined && (
-                  <p className="font-mono">{formatBytes(file.size)}</p>
-                )}
-                {file.modifiedAt && (
-                  <p className="text-xs">{formatDate(file.modifiedAt)}</p>
-                )}
-              </div>
+              <span className="text-xs text-center truncate w-full font-medium">{file.name}</span>
+              {file.size !== undefined && !file.isDirectory && (
+                <span className="text-[10px] text-muted-foreground">{formatBytes(file.size)}</span>
+              )}
             </div>
           </FileContextMenu>
         ))}
 
         {files.length === 0 && (
-          <div className="flex items-center justify-center h-32 text-muted-foreground">
+          <div className="col-span-full flex items-center justify-center h-32 text-muted-foreground">
             Empty directory
           </div>
         )}
