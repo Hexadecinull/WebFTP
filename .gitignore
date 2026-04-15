@@ -22,3 +22,6 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Stale npm lock file — this project uses Bun
+package-lock.json

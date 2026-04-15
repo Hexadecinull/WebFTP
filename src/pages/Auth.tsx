@@ -165,8 +165,8 @@ export default function Auth({ onClose }: { onClose?: () => void }) {
               <TabsTrigger value="signup" className="data-[state=active]:bg-background">Sign Up</TabsTrigger>
             </TabsList>
 
-            <TabsContent value="signin">
-              <form onSubmit={handleSignIn} className="space-y-4">
+            <TabsContent value="signin" className="flex flex-col">
+              <form onSubmit={handleSignIn} className="flex flex-col gap-4 min-h-[340px]">
                 <div className="space-y-2">
                   <Label htmlFor="signin-email">Email</Label>
                   <Input
@@ -236,14 +236,16 @@ export default function Auth({ onClose }: { onClose?: () => void }) {
                   </DialogContent>
                 </Dialog>
 
+                <div className="flex-1" />
+
                 <Button type="submit" className="w-full" disabled={isLoading}>
                   {isLoading ? 'Signing in...' : 'Sign In'}
                 </Button>
               </form>
             </TabsContent>
 
-            <TabsContent value="signup">
-              <form onSubmit={handleSignUp} className="space-y-4">
+            <TabsContent value="signup" className="flex flex-col">
+              <form onSubmit={handleSignUp} className="flex flex-col gap-4 min-h-[340px]">
                 <div className="space-y-2">
                   <Label htmlFor="signup-email">Email</Label>
                   <Input
@@ -358,7 +360,7 @@ export default function Auth({ onClose }: { onClose?: () => void }) {
                   {isLoading ? 'Creating account...' : 'Sign Up'}
                 </Button>
                 
-                <p className="text-xs text-muted-foreground text-center mt-4">
+                <p className="text-xs text-muted-foreground text-center">
                   Please verify your email after signing up to activate your account.
                 </p>
               </form>
