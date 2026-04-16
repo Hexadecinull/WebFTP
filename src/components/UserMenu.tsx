@@ -92,10 +92,10 @@ export function UserMenu() {
         title: 'Account Deleted',
         description: 'Your account has been successfully deleted',
       });
-    } catch (error: any) {
+    } catch (error: unknown) {
       toast({
         title: 'Error',
-        description: error.message || 'Failed to delete account',
+        description: error instanceof Error ? error.message : 'Failed to delete account',
         variant: 'destructive',
       });
     }

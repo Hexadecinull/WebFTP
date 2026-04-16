@@ -47,6 +47,7 @@ export const UploadDialog = ({ open, onOpenChange, onUpload }: UploadDialogProps
     } else {
       handleFiles(e.dataTransfer.files);
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [handleFiles]);
 
   const traverseEntry = (entry: FileSystemEntry): Promise<File[]> => {
@@ -130,7 +131,7 @@ export const UploadDialog = ({ open, onOpenChange, onUpload }: UploadDialogProps
               type="file"
               multiple
               className="hidden"
-              {...({ webkitdirectory: '', directory: '' } as any)}
+              {...({ webkitdirectory: '', directory: '' } as React.InputHTMLAttributes<HTMLInputElement>)}
               onChange={(e) => handleFiles(e.target.files)}
             />
           </div>

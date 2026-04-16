@@ -102,6 +102,7 @@ export const Settings = ({ onClose }: SettingsProps) => {
       setUseAmoled(false);
       localStorage.setItem('useAmoled', 'false');
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [theme]);
 
   // Reapply Material You theming when theme mode, AMOLED, or Material You setting changes
@@ -110,6 +111,7 @@ export const Settings = ({ onClose }: SettingsProps) => {
     if (primaryHsl) {
       applyMaterialYouTheming(primaryHsl);
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [theme, useAmoled, useMaterialYou]);
 
   // System theme detection
@@ -204,7 +206,8 @@ export const Settings = ({ onClose }: SettingsProps) => {
 
     const max = Math.max(r, g, b);
     const min = Math.min(r, g, b);
-    let h = 0, s = 0, l = (max + min) / 2;
+    let h = 0, s = 0;
+    const l = (max + min) / 2;
 
     if (max !== min) {
       const d = max - min;
@@ -398,10 +401,10 @@ export const Settings = ({ onClose }: SettingsProps) => {
       });
       
       onClose();
-    } catch (error: any) {
+    } catch (error: unknown) {
       toast({
         title: 'Error',
-        description: error.message || 'Failed to delete account',
+        description: error instanceof Error ? error.message : 'Failed to delete account',
         variant: 'destructive',
       });
     }

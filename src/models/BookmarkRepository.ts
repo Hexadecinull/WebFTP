@@ -10,8 +10,8 @@ export class BookmarkRepository {
     if (!stored) return [];
     
     try {
-      const bookmarks = JSON.parse(stored);
-      return bookmarks.map((b: any) => ({
+      const bookmarks = JSON.parse(stored) as (Omit<Bookmark, 'createdAt'> & { createdAt: string })[];
+      return bookmarks.map((b) => ({
         ...b,
         createdAt: new Date(b.createdAt),
       }));

@@ -122,7 +122,7 @@ const Index = () => {
         timestamp: Date.now(),
         userIP: user ? undefined : userIP,
       };
-      const updated = [newConnection, ...recentConnections.filter((c: any) => c.host !== session.host)].slice(0, 10);
+      const updated = [newConnection, ...recentConnections.filter((c: { host: string }) => c.host !== session.host)].slice(0, 10);
       localStorage.setItem(storageKey, JSON.stringify(updated));
     }
   }, [session, user, userIP]);

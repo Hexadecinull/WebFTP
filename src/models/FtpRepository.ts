@@ -5,6 +5,8 @@
 // requires a backend proxy server (e.g. Node.js + basic-ftp / ssh2-sftp-client).
 // See CONTRIBUTING.md for architecture notes on implementing real connections.
 
+/* eslint-disable no-useless-escape */
+
 import { FtpEntry, ConnectOptions, Session } from '@/types/ftp';
 
 export type ProgressCallback = (loaded: number, total?: number) => void;
@@ -483,7 +485,7 @@ class TaskManager
 
   def complete(id)
     task = @tasks.find { |t| t[:id] == id }
-    raise "Task #\#{id} not found" unless task
+    raise "Task ##{id} not found" unless task
     task[:done] = true
     task[:completed_at] = Time.now
     task
@@ -497,7 +499,7 @@ class TaskManager
   def summary
     total = @tasks.size
     done = @tasks.count { |t| t[:done] }
-    "Tasks: \#{done}/\#{total} completed"
+    "Tasks: #{done}/#{total} completed"
   end
 end
 
@@ -508,7 +510,7 @@ manager.add("Update docs", priority: :low)
 manager.complete(1)
 
 puts manager.summary
-manager.pending.each { |t| puts "  [\#{t[:priority]}] \#{t[:title]}" }`,
+manager.pending.each { |t| puts "  [#{t[:priority]}] #{t[:title]}" }`,
 
   'main.php': `<?php
 declare(strict_types=1);

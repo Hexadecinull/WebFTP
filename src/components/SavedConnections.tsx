@@ -156,7 +156,7 @@ export const SavedConnections = ({ onConnect }: SavedConnectionsProps) => {
               <Label>Protocol</Label>
               <Select
                 value={currentConnection.protocol}
-                onValueChange={(value) => setCurrentConnection({ ...currentConnection, protocol: value as any })}
+                onValueChange={(value) => setCurrentConnection({ ...currentConnection, protocol: value as ConnectOptions['protocol'] })}
               >
                 <SelectTrigger>
                   <SelectValue />
