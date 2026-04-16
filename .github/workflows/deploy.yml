@@ -33,13 +33,13 @@ jobs:
       # on hard refresh or direct URL access. InfinityFree runs Apache.
       - name: Write .htaccess for SPA routing
         run: |
-          cat > dist/.htaccess << 'EOF'
-Options -MultiViews
-RewriteEngine On
-RewriteCond %{REQUEST_FILENAME} !-f
-RewriteCond %{REQUEST_FILENAME} !-d
-RewriteRule ^ index.html [QSA,L]
-EOF
+          {
+            echo 'Options -MultiViews'
+            echo 'RewriteEngine On'
+            echo 'RewriteCond %{REQUEST_FILENAME} !-f'
+            echo 'RewriteCond %{REQUEST_FILENAME} !-d'
+            echo 'RewriteRule ^ index.html [QSA,L]'
+          } > dist/.htaccess
 
       - name: Deploy via FTP
         uses: SamKirkland/FTP-Deploy-Action@v4.3.5
