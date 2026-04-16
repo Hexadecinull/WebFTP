@@ -34,12 +34,12 @@ jobs:
       - name: Write .htaccess for SPA routing
         run: |
           cat > dist/.htaccess << 'EOF'
-          Options -MultiViews
-          RewriteEngine On
-          RewriteCond %{REQUEST_FILENAME} !-f
-          RewriteCond %{REQUEST_FILENAME} !-d
-          RewriteRule ^ index.html [QSA,L]
-          EOF
+Options -MultiViews
+RewriteEngine On
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteRule ^ index.html [QSA,L]
+EOF
 
       - name: Deploy via FTP
         uses: SamKirkland/FTP-Deploy-Action@v4.3.5
@@ -50,5 +50,5 @@ jobs:
           # Adjust this path to match your InfinityFree document root
           server-dir: /webftp.ct.ws/htdocs/
           local-dir: ./dist/
-          # Only upload files that changed since last deploy
-          dangerous-clean-slate: false
+          # Clean slate ensures old hashed asset files don't accumulate
+          dangerous-clean-slate: true

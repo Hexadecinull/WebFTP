@@ -23,4 +23,16 @@ export default tseslint.config(
       "@typescript-eslint/no-unused-vars": "off",
     },
   },
+  {
+    // shadcn/ui generated files and context files legitimately export both
+    // components and non-component values (variants, hooks, constants).
+    // The react-refresh warning is a false positive for these files.
+    files: [
+      "src/components/ui/**/*.{ts,tsx}",
+      "src/contexts/**/*.{ts,tsx}",
+    ],
+    rules: {
+      "react-refresh/only-export-components": "off",
+    },
+  },
 );

@@ -13,4 +13,8 @@ export default defineConfig({
       "@": path.resolve(__dirname, "./src"),
     },
   },
+  build: {
+    // Bundle is large due to CodeMirror language packs + shadcn/ui — expected
+    chunkSizeWarningLimit: 2000,
+  },
 });
