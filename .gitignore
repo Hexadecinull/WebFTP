@@ -25,3 +25,6 @@ dist-ssr
 
 # Stale npm lock file — this project uses Bun
 package-lock.json
+
+# Environment file
+.env
