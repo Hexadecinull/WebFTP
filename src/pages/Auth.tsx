@@ -166,7 +166,7 @@ export default function Auth({ onClose }: { onClose?: () => void }) {
             </TabsList>
 
             <TabsContent value="signin" className="flex flex-col">
-              <form onSubmit={handleSignIn} className="flex flex-col gap-4 min-h-[340px]">
+              <form onSubmit={handleSignIn} className="flex flex-col gap-4 pt-4">
                 <div className="space-y-2">
                   <Label htmlFor="signin-email">Email</Label>
                   <Input
@@ -236,8 +236,6 @@ export default function Auth({ onClose }: { onClose?: () => void }) {
                   </DialogContent>
                 </Dialog>
 
-                <div className="flex-1" />
-
                 <Button type="submit" className="w-full" disabled={isLoading}>
                   {isLoading ? 'Signing in...' : 'Sign In'}
                 </Button>
@@ -245,7 +243,7 @@ export default function Auth({ onClose }: { onClose?: () => void }) {
             </TabsContent>
 
             <TabsContent value="signup" className="flex flex-col">
-              <form onSubmit={handleSignUp} className="flex flex-col gap-4 min-h-[340px]">
+              <form onSubmit={handleSignUp} className="flex flex-col gap-4 pt-4">
                 <div className="space-y-2">
                   <Label htmlFor="signup-email">Email</Label>
                   <Input
