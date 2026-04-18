@@ -22,7 +22,8 @@ import { RenameFolderDialog } from '@/components/RenameFolderDialog';
 import { DownloadFolderDialog } from '@/components/DownloadFolderDialog';
 import { Button } from '@/components/ui/button';
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
-import { RefreshCw, Upload, FolderPlus, FilePlus, Trash2, Settings as SettingsIcon, List, LayoutGrid } from 'lucide-react';
+import { RefreshCw, Upload, FolderPlus, FilePlus, Trash2, Settings as SettingsIcon, List, LayoutGrid, MoreHorizontal } from 'lucide-react';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { FtpEntry, ConnectOptions } from '@/types/ftp';
 import { isEditableFile } from '@/lib/fileUtils';
 import logo from '@/assets/logo.png';
@@ -341,7 +342,7 @@ const Index = () => {
               
               {session && (
                 <>
-                  {/* View Mode Toggle */}
+                  {/* View mode toggle — always visible */}
                   <ToggleGroup
                     type="single"
                     value={viewMode}
@@ -360,24 +361,58 @@ const Index = () => {
                   <Button variant="ghost" size="sm" onClick={refresh} disabled={isLoading}>
                     <RefreshCw className={`h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} />
                   </Button>
-                  <Button variant="ghost" size="sm" onClick={() => setUploadDialogOpen(true)} title="Upload Files">
-                    <Upload className="h-4 w-4" />
-                  </Button>
+
+                  {/* Desktop: show actions inline */}
                   {!isMobile && (
                     <>
-                      <Button variant="ghost" size="sm" onClick={() => setCreateFolderOpen(true)} title="Create New Folder">
+                      <Button variant="ghost" size="sm" onClick={() => setUploadDialogOpen(true)} title="Upload Files">
+                        <Upload className="h-4 w-4" />
+                      </Button>
+                      <Button variant="ghost" size="sm" onClick={() => setCreateFolderOpen(true)} title="New Folder">
                         <FolderPlus className="h-4 w-4" />
                       </Button>
-                      <Button variant="ghost" size="sm" onClick={() => setCreateFileOpen(true)} title="Create New File">
+                      <Button variant="ghost" size="sm" onClick={() => setCreateFileOpen(true)} title="New File">
                         <FilePlus className="h-4 w-4" />
                       </Button>
+                      {selectedFile && selectedFile.name !== '..' && (
+                        <Button variant="ghost" size="sm" onClick={handleDeleteClick}>
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      )}
                     </>
                   )}
-                  {selectedFile && selectedFile.name !== '..' && (
-                    <Button variant="ghost" size="sm" onClick={handleDeleteClick}>
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
+
+                  {/* Mobile: collapse secondary actions into overflow menu */}
+                  {isMobile && (
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="ghost" size="sm">
+                          <MoreHorizontal className="h-4 w-4" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end">
+                        <DropdownMenuItem onClick={() => setUploadDialogOpen(true)}>
+                          <Upload className="h-4 w-4 mr-2" />
+                          Upload Files
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => setCreateFolderOpen(true)}>
+                          <FolderPlus className="h-4 w-4 mr-2" />
+                          New Folder
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => setCreateFileOpen(true)}>
+                          <FilePlus className="h-4 w-4 mr-2" />
+                          New File
+                        </DropdownMenuItem>
+                        {selectedFile && selectedFile.name !== '..' && (
+                          <DropdownMenuItem onClick={handleDeleteClick} className="text-destructive focus:text-destructive">
+                            <Trash2 className="h-4 w-4 mr-2" />
+                            Delete {selectedFile.name}
+                          </DropdownMenuItem>
+                        )}
+                      </DropdownMenuContent>
+                    </DropdownMenu>
                   )}
+
                   <Button variant="destructive" size="sm" onClick={disconnect}>
                     {isMobile ? 'DC' : 'Disconnect'}
                   </Button>
