@@ -11,7 +11,7 @@ import { Breadcrumb } from '@/components/Breadcrumb';
 import { FileEditor } from '@/components/FileEditor';
 import { FileProperties } from '@/components/FileProperties';
 import { Settings } from '@/components/Settings';
-import { BookmarksDialog } from '@/components/BookmarksDialog';
+import { BookmarksDialog, saveBookmark } from '@/components/BookmarksDialog';
 import { RecentConnectionsDialog } from '@/components/RecentConnectionsDialog';
 import { SavedConnectionsDialog } from '@/components/SavedConnectionsDialog';
 import { BackgroundContextMenu } from '@/components/BackgroundContextMenu';
@@ -36,7 +36,9 @@ import { useIsMobile } from '@/hooks/use-mobile';
 
 // Model Layer
 import { FtpRepositoryImpl } from '@/models/FtpRepository';
+import { FtpRepositoryRemoteImpl } from '@/models/FtpRepositoryRemoteImpl';
 import { TransferQueueManager } from '@/models/TransferQueueManager';
+import { useSettings } from '@/hooks/useSettings';
 
 // Presenter Layer
 import { useFtpConnection } from '@/presenters/useFtpConnection';
@@ -48,12 +50,35 @@ const Index = () => {
   const { handleEmptyClick } = useEasterEgg();
   const isMobile = useIsMobile();
   
-  // Initialize Model layer
-  const ftpRepository = useMemo(() => new FtpRepositoryImpl(), []);
+  const { settings } = useSettings();
+
+  // Pick real proxy implementation if a proxy URL is configured, otherwise use demo VFS
+  const ftpRepository = useMemo(() => {
+    if (settings.proxyUrl.trim()) {
+      return new FtpRepositoryRemoteImpl(settings.proxyUrl.trim());
+    }
+    return new FtpRepositoryImpl();
+  }, [settings.proxyUrl]);
+
   const transferQueueManager = useMemo(() => new TransferQueueManager(), []);
 
+  // Keep queue concurrency in sync with settings
+  useEffect(() => {
+    transferQueueManager.setMaxConcurrent(settings.concurrentTransfers);
+  }, [settings.concurrentTransfers, transferQueueManager]);
+
   // Presenter layer hooks
-  const { session, isConnecting, connect, disconnect } = useFtpConnection(ftpRepository);
+  const { session, isConnecting, connect: connectRaw, disconnect } = useFtpConnection(ftpRepository);
+
+  // Inject persisted settings into every connect call
+  const connect = useCallback(async (options: ConnectOptions) => {
+    return connectRaw({
+      ...options,
+      timeout: settings.connectionTimeout,
+      keepAlive: settings.keepAliveInterval,
+      ftpPassive: options.ftpPassive ?? settings.usePassiveMode,
+    });
+  }, [connectRaw, settings.connectionTimeout, settings.keepAliveInterval, settings.usePassiveMode]);
   const {
     files,
     currentPath,
@@ -101,32 +126,23 @@ const Index = () => {
   // Drag-and-drop file moving state
   const [draggedFile, setDraggedFile] = useState<FtpEntry | null>(null);
 
-  // Get user IP for guest recent connections
-  const [userIP, setUserIP] = useState<string>('');
-  
+  // Save a recent connection entry whenever a new session is established.
+  // Stores only the fields needed to reconnect (not the live session object).
+  // Key is per-user so each account gets its own history; guests share one list.
   useEffect(() => {
-    if (!user) {
-      fetch('https://api.ipify.org?format=json')
-        .then(res => res.json())
-        .then(data => setUserIP(data.ip))
-        .catch(() => setUserIP('unknown'));
-    }
-  }, [user]);
-
-  useEffect(() => {
-    if (session) {
-      const storageKey = user ? 'recentConnections' : `recentConnections_${userIP}`;
-      const recentConnections = JSON.parse(localStorage.getItem(storageKey) || '[]');
-      const newConnection = {
-        id: Date.now().toString(),
-        ...session,
-        timestamp: Date.now(),
-        userIP: user ? undefined : userIP,
-      };
-      const updated = [newConnection, ...recentConnections.filter((c: { host: string }) => c.host !== session.host)].slice(0, 10);
-      localStorage.setItem(storageKey, JSON.stringify(updated));
-    }
-  }, [session, user, userIP]);
+    if (!session) return;
+    const storageKey = user ? `recentConnections_${user.id}` : 'recentConnections_guest';
+    const existing = JSON.parse(localStorage.getItem(storageKey) || '[]') as Array<{ id: string; host: string; timestamp: number }>;
+    const entry = {
+      id: Date.now().toString(),
+      host: session.host,
+      port: session.currentPath, // path stored for context only
+      protocol: session.protocol,
+      timestamp: Date.now(),
+    };
+    const updated = [entry, ...existing.filter(c => c.host !== session.host)].slice(0, 10);
+    localStorage.setItem(storageKey, JSON.stringify(updated));
+  }, [session, user]);
 
   // View event handlers
   const handleConnect = useCallback(async (options: ConnectOptions) => {
@@ -270,6 +286,12 @@ const Index = () => {
     setDraggedFile(null);
   }, [draggedFile, renameFile]);
 
+  const handleBookmark = useCallback((file: FtpEntry) => {
+    if (!session) return;
+    saveBookmark(user?.id, file.path, session.host);
+    toast({ title: 'Bookmarked', description: `${file.name} added to bookmarks` });
+  }, [session, user]);
+
   const commonFileProps = {
     files,
     onFileClick: handleFileClick,
@@ -283,6 +305,7 @@ const Index = () => {
     onProperties: handleShowProperties,
     onRename: (file: FtpEntry) => setRenameFolderFile(file),
     onDownloadFolder: (file: FtpEntry) => setDownloadFolderFile(file),
+    onBookmark: handleBookmark,
     selectedFile,
     onDragStart: handleFileDragStart,
     onDropOnFolder: handleDropOnFolder,

@@ -17,6 +17,7 @@ interface FileGridProps {
   onProperties: (file: FtpEntry) => void;
   onRename?: (file: FtpEntry) => void;
   onDownloadFolder?: (file: FtpEntry) => void;
+  onBookmark?: (file: FtpEntry) => void;
   selectedFile?: FtpEntry;
   onDragStart?: (e: React.DragEvent, file: FtpEntry) => void;
   onDropOnFolder?: (e: React.DragEvent, folder: FtpEntry) => void;
@@ -33,6 +34,7 @@ export const FileGrid = ({
   onProperties,
   onRename,
   onDownloadFolder,
+  onBookmark,
   selectedFile,
   onDragStart,
   onDropOnFolder,
@@ -51,6 +53,7 @@ export const FileGrid = ({
             onProperties={onProperties}
             onRename={onRename}
             onDownloadFolder={onDownloadFolder}
+            onBookmark={onBookmark}
             canEdit={!file.isDirectory && isEditableFile(file.name)}
           >
             <div

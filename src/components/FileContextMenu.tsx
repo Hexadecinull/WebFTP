@@ -1,6 +1,6 @@
 // View Layer - File Context Menu Component
 
-import { Download, Trash2, Edit, FolderOpen, FileText, Archive } from 'lucide-react';
+import { Download, Trash2, Edit, FolderOpen, FileText, Archive, Bookmark } from 'lucide-react';
 import { FtpEntry } from '@/types/ftp';
 import {
   ContextMenu,
@@ -20,6 +20,7 @@ interface FileContextMenuProps {
   onProperties: (file: FtpEntry) => void;
   onRename?: (file: FtpEntry) => void;
   onDownloadFolder?: (file: FtpEntry) => void;
+  onBookmark?: (file: FtpEntry) => void;
   canEdit: boolean;
 }
 
@@ -33,6 +34,7 @@ export const FileContextMenu = ({
   onProperties,
   onRename,
   onDownloadFolder,
+  onBookmark,
   canEdit,
 }: FileContextMenuProps) => {
   return (
@@ -47,6 +49,12 @@ export const FileContextMenu = ({
               <FolderOpen className="h-4 w-4" />
               <span>Open Folder</span>
             </ContextMenuItem>
+            {file.name !== '..' && onBookmark && (
+              <ContextMenuItem onClick={() => onBookmark(file)} className="gap-2">
+                <Bookmark className="h-4 w-4" />
+                <span>Bookmark Folder</span>
+              </ContextMenuItem>
+            )}
             {file.name !== '..' && onRename && (
               <ContextMenuItem onClick={() => onRename(file)} className="gap-2">
                 <Edit className="h-4 w-4" />
@@ -80,19 +88,19 @@ export const FileContextMenu = ({
             )}
           </>
         )}
-        
+
         <ContextMenuSeparator />
-        
+
         <ContextMenuItem onClick={() => onProperties(file)} className="gap-2">
           <FileText className="h-4 w-4" />
           <span>Properties</span>
         </ContextMenuItem>
-        
+
         <ContextMenuSeparator />
-        
+
         {file.name !== '..' && (
-          <ContextMenuItem 
-            onClick={() => onDelete(file)} 
+          <ContextMenuItem
+            onClick={() => onDelete(file)}
             className="gap-2 text-destructive focus:text-destructive"
           >
             <Trash2 className="h-4 w-4" />

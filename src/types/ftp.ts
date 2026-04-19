@@ -9,18 +9,37 @@ export interface FtpEntry {
   permissions?: string;
 }
 
+export type Protocol = 'ftp' | 'ftps' | 'sftp' | 'scp' | 'ssh' | 'smb' | 'webdav' | 'local';
+
 export interface ConnectOptions {
   host: string;
   port: number;
   username: string;
   password: string;
-  protocol: 'ftp' | 'ftps' | 'sftp' | 'smb' | 'webdav' | 'local';
+  protocol: Protocol;
+  // SSH/SFTP/SCP key auth
   sshKey?: string;
+  sshKeyPassphrase?: string;
+  // FTP options
+  ftpPassive?: boolean;
+  ftpSecurityMode?: 'explicit' | 'implicit';
+  ftpEncoding?: string;
+  // SMB options
+  smbDomain?: string;
+  smbVersion?: 'automatic' | 'smb1' | 'smb2' | 'smb3';
+  // WebDAV options
+  webdavSecure?: boolean;
+  webdavBasePath?: string;
+  // General
+  timeout?: number;
+  keepAlive?: number;
+  displayName?: string;
 }
 
 export interface Session {
   id: string;
   host: string;
+  protocol: Protocol;
   connected: boolean;
   currentPath: string;
 }
@@ -45,6 +64,6 @@ export interface Bookmark {
   host: string;
   port: number;
   username: string;
-  protocol: 'ftp' | 'ftps' | 'sftp' | 'smb' | 'webdav' | 'local';
+  protocol: Protocol;
   createdAt: Date;
 }

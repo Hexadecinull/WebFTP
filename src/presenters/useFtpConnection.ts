@@ -13,12 +13,14 @@ export const useFtpConnection = (ftpRepository: FtpRepository) => {
     setIsConnecting(true);
     try {
       const newSession = await ftpRepository.connect(options);
-      setSession(newSession);
+      // Ensure protocol is always propagated onto the session
+      const enriched: Session = { ...newSession, protocol: options.protocol };
+      setSession(enriched);
       toast({
         title: 'Connected',
-        description: `Successfully connected to ${options.host}`,
+        description: `Connected to ${options.host} via ${options.protocol.toUpperCase()}`,
       });
-      return newSession;
+      return enriched;
     } catch (error) {
       toast({
         title: 'Connection Failed',
@@ -33,14 +35,10 @@ export const useFtpConnection = (ftpRepository: FtpRepository) => {
 
   const disconnect = useCallback(async () => {
     if (!session) return;
-    
     try {
       await ftpRepository.disconnect(session);
       setSession(null);
-      toast({
-        title: 'Disconnected',
-        description: 'Disconnected from server',
-      });
+      toast({ title: 'Disconnected', description: 'Disconnected from server' });
     } catch (error) {
       toast({
         title: 'Disconnect Failed',
@@ -50,10 +48,5 @@ export const useFtpConnection = (ftpRepository: FtpRepository) => {
     }
   }, [session, ftpRepository]);
 
-  return {
-    session,
-    isConnecting,
-    connect,
-    disconnect,
-  };
+  return { session, isConnecting, connect, disconnect };
 };

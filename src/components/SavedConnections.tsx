@@ -19,7 +19,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { ConnectOptions } from '@/types/ftp';
+import { ConnectOptions, Protocol } from '@/types/ftp';
 
 interface SavedConnection extends ConnectOptions {
   id: string;
@@ -156,15 +156,18 @@ export const SavedConnections = ({ onConnect }: SavedConnectionsProps) => {
               <Label>Protocol</Label>
               <Select
                 value={currentConnection.protocol}
-                onValueChange={(value) => setCurrentConnection({ ...currentConnection, protocol: value as ConnectOptions['protocol'] })}
+                onValueChange={(value) => setCurrentConnection({ ...currentConnection, protocol: value as Protocol })}
               >
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="ftp">FTP</SelectItem>
-                  <SelectItem value="ftps">FTPS</SelectItem>
+                  <SelectItem value="ftp">FTP / FTPS</SelectItem>
                   <SelectItem value="sftp">SFTP</SelectItem>
+                  <SelectItem value="scp">SCP</SelectItem>
+                  <SelectItem value="ssh">SSH</SelectItem>
+                  <SelectItem value="smb">SMB</SelectItem>
+                  <SelectItem value="webdav">WebDAV</SelectItem>
                 </SelectContent>
               </Select>
             </div>

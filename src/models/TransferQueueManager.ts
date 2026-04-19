@@ -10,6 +10,11 @@ export class TransferQueueManager {
   private maxConcurrent = 3;
   private activeCount = 0;
 
+  setMaxConcurrent(n: number) {
+    this.maxConcurrent = Math.max(1, n);
+    this.processQueue();
+  }
+
   addTransfer(transfer: Omit<Transfer, 'id' | 'progress' | 'status'>): Transfer {
     const newTransfer: Transfer = {
       ...transfer,

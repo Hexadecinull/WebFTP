@@ -12,6 +12,7 @@ import { Input } from '@/components/ui/input';
 import { toast } from '@/hooks/use-toast';
 import { useTheme } from '@/contexts/ThemeContext';
 import { supabase } from '@/integrations/supabase/client';
+import { useSettings } from '@/hooks/useSettings';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -47,33 +48,13 @@ const themePresets = [
 
 export const Settings = ({ onClose }: SettingsProps) => {
   const { user, signOut } = useAuth();
+  const { settings, setSetting } = useSettings();
   const [hoveredTheme, setHoveredTheme] = useState<string | null>(null);
   const [selectedTheme, setSelectedTheme] = useState(() => {
     const savedPrimary = getComputedStyle(document.documentElement).getPropertyValue('--primary').trim();
     return themePresets.find(t => t.primary === savedPrimary) || themePresets[0];
   });
   const { theme, toggleTheme } = useTheme();
-  const [concurrentTransfers, setConcurrentTransfers] = useState(() => {
-    return parseInt(localStorage.getItem('concurrentTransfers') || '3');
-  });
-  const [autoRetry, setAutoRetry] = useState(() => {
-    return localStorage.getItem('autoRetry') === 'true';
-  });
-  const [bufferSize, setBufferSize] = useState(() => {
-    return parseInt(localStorage.getItem('bufferSize') || '8192');
-  });
-  const [connectionTimeout, setConnectionTimeout] = useState(() => {
-    return parseInt(localStorage.getItem('connectionTimeout') || '30');
-  });
-  const [keepAliveInterval, setKeepAliveInterval] = useState(() => {
-    return parseInt(localStorage.getItem('keepAliveInterval') || '60');
-  });
-  const [enableLogging, setEnableLogging] = useState(() => {
-    return localStorage.getItem('enableLogging') === 'true';
-  });
-  const [usePassiveMode, setUsePassiveMode] = useState(() => {
-    return localStorage.getItem('usePassiveMode') !== 'false';
-  });
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [customColor, setCustomColor] = useState('#0ea5e9');
   const [showColorPicker, setShowColorPicker] = useState(false);
@@ -87,6 +68,15 @@ export const Settings = ({ onClose }: SettingsProps) => {
     return localStorage.getItem('useMaterialYou') !== 'false';
   });
   const [isClosing, setIsClosing] = useState(false);
+
+  // Aliases for readability
+  const concurrentTransfers = settings.concurrentTransfers;
+  const autoRetry = settings.autoRetry;
+  const bufferSize = settings.bufferSize;
+  const connectionTimeout = settings.connectionTimeout;
+  const keepAliveInterval = settings.keepAliveInterval;
+  const enableLogging = settings.enableLogging;
+  const usePassiveMode = settings.usePassiveMode;
 
   useEffect(() => {
     const currentPrimary = getComputedStyle(document.documentElement).getPropertyValue('--primary').trim();
@@ -344,40 +334,13 @@ export const Settings = ({ onClose }: SettingsProps) => {
     }, 150);
   };
 
-  const handleConcurrentTransfersChange = (value: number) => {
-    setConcurrentTransfers(value);
-    localStorage.setItem('concurrentTransfers', value.toString());
-  };
-
-  const handleAutoRetryChange = (checked: boolean) => {
-    setAutoRetry(checked);
-    localStorage.setItem('autoRetry', checked.toString());
-  };
-
-  const handleBufferSizeChange = (value: number) => {
-    setBufferSize(value);
-    localStorage.setItem('bufferSize', value.toString());
-  };
-
-  const handleConnectionTimeoutChange = (value: number) => {
-    setConnectionTimeout(value);
-    localStorage.setItem('connectionTimeout', value.toString());
-  };
-
-  const handleKeepAliveIntervalChange = (value: number) => {
-    setKeepAliveInterval(value);
-    localStorage.setItem('keepAliveInterval', value.toString());
-  };
-
-  const handleEnableLoggingChange = (checked: boolean) => {
-    setEnableLogging(checked);
-    localStorage.setItem('enableLogging', checked.toString());
-  };
-
-  const handleUsePassiveModeChange = (checked: boolean) => {
-    setUsePassiveMode(checked);
-    localStorage.setItem('usePassiveMode', checked.toString());
-  };
+  const handleConcurrentTransfersChange = (value: number) => setSetting('concurrentTransfers', value);
+  const handleAutoRetryChange = (checked: boolean) => setSetting('autoRetry', checked);
+  const handleBufferSizeChange = (value: number) => setSetting('bufferSize', value);
+  const handleConnectionTimeoutChange = (value: number) => setSetting('connectionTimeout', value);
+  const handleKeepAliveIntervalChange = (value: number) => setSetting('keepAliveInterval', value);
+  const handleEnableLoggingChange = (checked: boolean) => setSetting('enableLogging', checked);
+  const handleUsePassiveModeChange = (checked: boolean) => setSetting('usePassiveMode', checked);
 
   const handleDeleteAccount = async () => {
     if (!user) return;
@@ -563,6 +526,28 @@ export const Settings = ({ onClose }: SettingsProps) => {
             <TabsContent value="connection" className="space-y-6 mt-6 animate-fade-in">
               <div className="space-y-4">
                 <Label className="text-lg font-semibold">Connection Settings</Label>
+
+                <div className="p-4 border border-border rounded-lg space-y-2">
+                  <Label className="text-base font-semibold">Proxy Server URL</Label>
+                  <p className="text-sm text-muted-foreground">
+                    URL of the WebFTP proxy server (required for real FTP/SFTP/SSH connections).
+                    Leave blank to use the built-in demo filesystem.
+                  </p>
+                  <Input
+                    type="url"
+                    placeholder="https://your-proxy.example.com"
+                    value={settings.proxyUrl}
+                    onChange={(e) => setSetting('proxyUrl', e.target.value)}
+                  />
+                  {settings.proxyUrl && (
+                    <p className="text-xs text-success">✓ Proxy configured — real connections enabled</p>
+                  )}
+                  {!settings.proxyUrl && (
+                    <p className="text-xs text-muted-foreground">
+                      See <code className="text-xs bg-muted px-1 rounded">server/README.md</code> for deployment instructions.
+                    </p>
+                  )}
+                </div>
                 
                 <div className="space-y-4">
                   <div className="flex items-center justify-between p-4 border border-border rounded-lg">
@@ -939,5 +924,6 @@ export const Settings = ({ onClose }: SettingsProps) => {
         </AlertDialogContent>
       </AlertDialog>
     </div>
+  </div>
   );
 };

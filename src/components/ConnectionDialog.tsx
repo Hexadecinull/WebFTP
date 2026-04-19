@@ -6,9 +6,8 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Switch } from '@/components/ui/switch';
-import { ConnectOptions } from '@/types/ftp';
+import { ConnectOptions, Protocol } from '@/types/ftp';
 import { useAuth } from '@/contexts/AuthContext';
 import { Lock, ChevronDown } from 'lucide-react';
 
@@ -18,6 +17,17 @@ interface ConnectionDialogProps {
   onConnect: (options: ConnectOptions) => void;
   isConnecting: boolean;
 }
+
+const DEFAULT_PORTS: Record<Protocol, number> = {
+  ftp: 21,
+  ftps: 990,
+  sftp: 22,
+  scp: 22,
+  ssh: 22,
+  smb: 445,
+  webdav: 443,
+  local: 0,
+};
 
 export const ConnectionDialog = ({
   open,
@@ -38,48 +48,140 @@ export const ConnectionDialog = ({
   const [showSftpMore, setShowSftpMore] = useState(false);
   const [showSmbMore, setShowSmbMore] = useState(false);
   const [showWebdavMore, setShowWebdavMore] = useState(false);
-  const [displayName, setDisplayName] = useState('');
-  const [ftpMode, setFtpMode] = useState('passive');
-  const [ftpSecurityMode, setFtpSecurityMode] = useState('explicit');
-  const [ftpEncoding, setFtpEncoding] = useState('automatic');
-  const [smbDomain, setSmbDomain] = useState('');
-  const [smbVersion, setSmbVersion] = useState('automatic');
-  const [privateKey, setPrivateKey] = useState<File | null>(null);
+  const [keyFile, setKeyFile] = useState<File | null>(null);
   const { user } = useAuth();
 
-  // Update port when protocol or security changes
+  // Update port when protocol changes
   useEffect(() => {
     if (formData.protocol === 'ftp') {
-      setFormData(prev => ({ ...prev, port: 21 }));
-    } else if (formData.protocol === 'sftp') {
-      setFormData(prev => ({ ...prev, port: 22 }));
+      setFormData(prev => ({ ...prev, port: ftpSecure ? 21 : 21 }));
     } else if (formData.protocol === 'webdav') {
-      setFormData(prev => ({ ...prev, port: webdavSecure ? 443 : 80 }));
-    } else if (formData.protocol === 'smb') {
-      setFormData(prev => ({ ...prev, port: 445 }));
+      setFormData(prev => ({ ...prev, port: webdavSecure ? 443 : 80, webdavSecure }));
+    } else {
+      setFormData(prev => ({ ...prev, port: DEFAULT_PORTS[formData.protocol] }));
     }
-  }, [formData.protocol, webdavSecure]);
+  }, [formData.protocol, webdavSecure, ftpSecure]);
 
-  // Auto-retract More sections when protocol changes
+  // Collapse expanded sections on protocol switch
   useEffect(() => {
     setShowFtpMore(false);
     setShowSftpMore(false);
     setShowSmbMore(false);
     setShowWebdavMore(false);
+    setKeyFile(null);
   }, [formData.protocol]);
 
-  // Reset protocol to FTP when dialog opens
+  // Reset on open
   useEffect(() => {
     if (open) {
-      setFormData(prev => ({ ...prev, protocol: 'ftp' }));
+      setFormData(prev => ({ ...prev, protocol: 'ftp', port: 21, username: 'anonymous' }));
     }
   }, [open]);
 
+  const handleKeyFile = async (file: File | null) => {
+    setKeyFile(file);
+    if (file) {
+      const text = await file.text();
+      setFormData(prev => ({ ...prev, sshKey: text }));
+    } else {
+      setFormData(prev => ({ ...prev, sshKey: undefined }));
+    }
+  };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     onConnect(formData);
   };
+
+  // Shared host + port + credentials fields
+  const hostField = (placeholder: string) => (
+    <div className="grid gap-2">
+      <Label htmlFor="host">Host</Label>
+      <Input
+        id="host"
+        placeholder={placeholder}
+        value={formData.host}
+        onChange={(e) => setFormData(prev => ({ ...prev, host: e.target.value }))}
+        required
+      />
+    </div>
+  );
+
+  const portField = () => (
+    <div className="grid gap-2">
+      <Label htmlFor="port">Port</Label>
+      <Input
+        id="port"
+        type="number"
+        value={formData.port}
+        onChange={(e) => setFormData(prev => ({ ...prev, port: parseInt(e.target.value) }))}
+        required
+      />
+    </div>
+  );
+
+  const credentialFields = (userPlaceholder = 'username') => (
+    <>
+      <div className="grid gap-2">
+        <Label htmlFor="username">Username</Label>
+        <Input
+          id="username"
+          placeholder={userPlaceholder}
+          value={formData.username}
+          onChange={(e) => setFormData(prev => ({ ...prev, username: e.target.value }))}
+          required
+        />
+      </div>
+      <div className="grid gap-2">
+        <Label htmlFor="password">Password</Label>
+        <Input
+          id="password"
+          type="password"
+          value={formData.password}
+          onChange={(e) => setFormData(prev => ({ ...prev, password: e.target.value }))}
+        />
+      </div>
+    </>
+  );
+
+  const sshKeyFields = () => (
+    <div className="space-y-3">
+      <div className="grid gap-2">
+        <Label htmlFor="private-key">Private Key File <span className="text-muted-foreground font-normal">(optional)</span></Label>
+        <Input
+          id="private-key"
+          type="file"
+          onChange={(e) => handleKeyFile(e.target.files?.[0] || null)}
+          accept=".pem,.key,.ppk,id_rsa,id_ed25519,id_ecdsa"
+        />
+        {keyFile && <p className="text-xs text-muted-foreground">Loaded: {keyFile.name}</p>}
+      </div>
+      {formData.sshKey && (
+        <div className="grid gap-2">
+          <Label htmlFor="key-passphrase">Key Passphrase <span className="text-muted-foreground font-normal">(if encrypted)</span></Label>
+          <Input
+            id="key-passphrase"
+            type="password"
+            placeholder="Leave blank if none"
+            value={formData.sshKeyPassphrase || ''}
+            onChange={(e) => setFormData(prev => ({ ...prev, sshKeyPassphrase: e.target.value }))}
+          />
+        </div>
+      )}
+    </div>
+  );
+
+  const displayNameField = () => (
+    <div className="grid gap-2">
+      <Label htmlFor="display-name">Display Name <span className="text-muted-foreground font-normal">(optional)</span></Label>
+      <Input
+        id="display-name"
+        placeholder="My Server"
+        value={formData.displayName || ''}
+        onChange={(e) => setFormData(prev => ({ ...prev, displayName: e.target.value }))}
+      />
+    </div>
+  );
 
   const renderProtocolFields = () => {
     switch (formData.protocol) {
@@ -88,94 +190,45 @@ export const ConnectionDialog = ({
           <>
             <div className="space-y-1">
               <div className="flex items-center justify-between p-3 border border-border rounded-lg">
-                <Label htmlFor="ftp-secure">Use FTPS</Label>
-                <Switch
-                  id="ftp-secure"
-                  checked={ftpSecure}
-                  onCheckedChange={setFtpSecure}
-                />
+                <Label htmlFor="ftp-secure">Use FTPS (encrypted)</Label>
+                <Switch id="ftp-secure" checked={ftpSecure} onCheckedChange={setFtpSecure} />
               </div>
-              {!ftpSecure && (
-                <p className="text-xs text-warning px-3 animate-fade-in">⚠️ Not secure</p>
-              )}
+              {!ftpSecure && <p className="text-xs text-warning px-3 animate-fade-in">⚠️ Plain FTP — credentials sent unencrypted</p>}
             </div>
-            <div className="grid gap-2">
-              <Label htmlFor="host">Host</Label>
-              <Input
-                id="host"
-                placeholder="ftp.example.com"
-                value={formData.host}
-                onChange={(e) => setFormData(prev => ({ ...prev, host: e.target.value }))}
-                required
-              />
-            </div>
-            <div className="grid gap-2">
-              <Label htmlFor="port">Port</Label>
-              <Input
-                id="port"
-                type="number"
-                value={formData.port}
-                onChange={(e) => setFormData(prev => ({ ...prev, port: parseInt(e.target.value) }))}
-                required
-              />
-            </div>
-            <div className="grid gap-2">
-              <Label htmlFor="username">Username</Label>
-              <Input
-                id="username"
-                value={formData.username}
-                onChange={(e) => setFormData(prev => ({ ...prev, username: e.target.value }))}
-                required
-              />
-            </div>
-            <div className="grid gap-2">
-              <Label htmlFor="password">Password</Label>
-              <Input
-                id="password"
-                type="password"
-                value={formData.password}
-                onChange={(e) => setFormData(prev => ({ ...prev, password: e.target.value }))}
-              />
-            </div>
-            
+            {hostField('ftp.example.com')}
+            {portField()}
+            {credentialFields('anonymous')}
             {showFtpMore && (
-              <div className="space-y-4 animate-fade-in">
+              <div className="space-y-3 animate-fade-in">
                 <div className="grid gap-2">
-                  <Label htmlFor="ftp-mode">Mode</Label>
-                  <Select value={ftpMode} onValueChange={setFtpMode}>
-                    <SelectTrigger id="ftp-mode">
-                      <SelectValue />
-                    </SelectTrigger>
+                  <Label htmlFor="ftp-mode">Transfer Mode</Label>
+                  <Select value={formData.ftpPassive !== false ? 'passive' : 'active'} onValueChange={v => setFormData(prev => ({ ...prev, ftpPassive: v === 'passive' }))}>
+                    <SelectTrigger id="ftp-mode"><SelectValue /></SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="passive">Passive</SelectItem>
+                      <SelectItem value="passive">Passive (recommended)</SelectItem>
                       <SelectItem value="active">Active</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
-                
-                <div className="grid gap-2">
-                  <Label htmlFor="ftp-security-mode">Security Mode</Label>
-                  <Select value={ftpSecurityMode} onValueChange={setFtpSecurityMode}>
-                    <SelectTrigger id="ftp-security-mode">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="explicit">Explicit</SelectItem>
-                      <SelectItem value="implicit">Implicit</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                
+                {ftpSecure && (
+                  <div className="grid gap-2">
+                    <Label htmlFor="ftp-security-mode">TLS Mode</Label>
+                    <Select value={formData.ftpSecurityMode || 'explicit'} onValueChange={v => setFormData(prev => ({ ...prev, ftpSecurityMode: v as 'explicit' | 'implicit' }))}>
+                      <SelectTrigger id="ftp-security-mode"><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="explicit">Explicit (STARTTLS)</SelectItem>
+                        <SelectItem value="implicit">Implicit</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                )}
                 <div className="grid gap-2">
                   <Label htmlFor="ftp-encoding">Encoding</Label>
-                  <Select value={ftpEncoding} onValueChange={setFtpEncoding}>
-                    <SelectTrigger id="ftp-encoding">
-                      <SelectValue />
-                    </SelectTrigger>
+                  <Select value={formData.ftpEncoding || 'automatic'} onValueChange={v => setFormData(prev => ({ ...prev, ftpEncoding: v }))}>
+                    <SelectTrigger id="ftp-encoding"><SelectValue /></SelectTrigger>
                     <SelectContent>
                       <SelectItem value="automatic">Automatic</SelectItem>
                       <SelectItem value="utf-8">UTF-8</SelectItem>
-                      <SelectItem value="utf-16">UTF-16</SelectItem>
                       <SelectItem value="iso-8859-1">ISO-8859-1</SelectItem>
                       <SelectItem value="windows-1252">Windows-1252</SelectItem>
                       <SelectItem value="gbk">GBK</SelectItem>
@@ -186,16 +239,7 @@ export const ConnectionDialog = ({
                     </SelectContent>
                   </Select>
                 </div>
-                
-                <div className="grid gap-2">
-                  <Label htmlFor="display-name">Display Name</Label>
-                  <Input
-                    id="display-name"
-                    placeholder="Optional"
-                    value={displayName}
-                    onChange={(e) => setDisplayName(e.target.value)}
-                  />
-                </div>
+                {displayNameField()}
               </div>
             )}
           </>
@@ -204,66 +248,49 @@ export const ConnectionDialog = ({
       case 'sftp':
         return (
           <>
-            <div className="grid gap-2">
-              <Label htmlFor="host">Host</Label>
-              <Input
-                id="host"
-                placeholder="sftp.example.com"
-                value={formData.host}
-                onChange={(e) => setFormData(prev => ({ ...prev, host: e.target.value }))}
-                required
-              />
-            </div>
-            <div className="grid gap-2">
-              <Label htmlFor="port">Port</Label>
-              <Input
-                id="port"
-                type="number"
-                value={formData.port}
-                onChange={(e) => setFormData(prev => ({ ...prev, port: parseInt(e.target.value) }))}
-                required
-              />
-            </div>
-            <div className="grid gap-2">
-              <Label htmlFor="username">Username</Label>
-              <Input
-                id="username"
-                value={formData.username}
-                onChange={(e) => setFormData(prev => ({ ...prev, username: e.target.value }))}
-                required
-              />
-            </div>
-            <div className="grid gap-2">
-              <Label htmlFor="password">Password</Label>
-              <Input
-                id="password"
-                type="password"
-                value={formData.password}
-                onChange={(e) => setFormData(prev => ({ ...prev, password: e.target.value }))}
-              />
-            </div>
-            
+            {hostField('sftp.example.com')}
+            {portField()}
+            {credentialFields()}
             {showSftpMore && (
-              <div className="space-y-4 animate-fade-in">
-                <div className="grid gap-2">
-                  <Label htmlFor="private-key">Private Key</Label>
-                  <Input
-                    id="private-key"
-                    type="file"
-                    onChange={(e) => setPrivateKey(e.target.files?.[0] || null)}
-                    accept=".pem,.key,.ppk"
-                  />
-                </div>
-                
-                <div className="grid gap-2">
-                  <Label htmlFor="display-name">Display Name</Label>
-                  <Input
-                    id="display-name"
-                    placeholder="Optional"
-                    value={displayName}
-                    onChange={(e) => setDisplayName(e.target.value)}
-                  />
-                </div>
+              <div className="space-y-3 animate-fade-in">
+                {sshKeyFields()}
+                {displayNameField()}
+              </div>
+            )}
+          </>
+        );
+
+      case 'scp':
+        return (
+          <>
+            <p className="text-xs text-muted-foreground bg-muted rounded-lg px-3 py-2">
+              SCP transfers files over SSH. Uses the same credentials as SFTP.
+            </p>
+            {hostField('server.example.com')}
+            {portField()}
+            {credentialFields()}
+            {showSftpMore && (
+              <div className="space-y-3 animate-fade-in">
+                {sshKeyFields()}
+                {displayNameField()}
+              </div>
+            )}
+          </>
+        );
+
+      case 'ssh':
+        return (
+          <>
+            <p className="text-xs text-muted-foreground bg-muted rounded-lg px-3 py-2">
+              SSH connects directly to a shell. File browsing uses the SFTP subsystem internally.
+            </p>
+            {hostField('server.example.com')}
+            {portField()}
+            {credentialFields()}
+            {showSftpMore && (
+              <div className="space-y-3 animate-fade-in">
+                {sshKeyFields()}
+                {displayNameField()}
               </div>
             )}
           </>
@@ -272,70 +299,39 @@ export const ConnectionDialog = ({
       case 'smb':
         return (
           <>
+            {hostField('192.168.1.100')}
             <div className="grid gap-2">
-              <Label htmlFor="host">Host / Share Path</Label>
+              <Label htmlFor="smb-share">Share Name</Label>
               <Input
-                id="host"
-                placeholder="192.168.1.52"
-                value={formData.host}
-                onChange={(e) => setFormData(prev => ({ ...prev, host: e.target.value }))}
-                required
+                id="smb-share"
+                placeholder="shared"
+                value={formData.displayName || ''}
+                onChange={(e) => setFormData(prev => ({ ...prev, displayName: e.target.value }))}
               />
             </div>
-            <div className="grid gap-2">
-              <Label htmlFor="username">Username</Label>
-              <Input
-                id="username"
-                value={formData.username}
-                onChange={(e) => setFormData(prev => ({ ...prev, username: e.target.value }))}
-                required
-              />
-            </div>
-            <div className="grid gap-2">
-              <Label htmlFor="password">Password</Label>
-              <Input
-                id="password"
-                type="password"
-                value={formData.password}
-                onChange={(e) => setFormData(prev => ({ ...prev, password: e.target.value }))}
-              />
-            </div>
-            
+            {credentialFields()}
             {showSmbMore && (
-              <div className="space-y-4 animate-fade-in">
+              <div className="space-y-3 animate-fade-in">
                 <div className="grid gap-2">
-                  <Label htmlFor="smb-domain">Domain</Label>
+                  <Label htmlFor="smb-domain">Domain <span className="text-muted-foreground font-normal">(optional)</span></Label>
                   <Input
                     id="smb-domain"
-                    placeholder="Optional"
-                    value={smbDomain}
-                    onChange={(e) => setSmbDomain(e.target.value)}
+                    placeholder="WORKGROUP"
+                    value={formData.smbDomain || ''}
+                    onChange={(e) => setFormData(prev => ({ ...prev, smbDomain: e.target.value }))}
                   />
                 </div>
-                
                 <div className="grid gap-2">
-                  <Label htmlFor="smb-version">Version</Label>
-                  <Select value={smbVersion} onValueChange={setSmbVersion}>
-                    <SelectTrigger id="smb-version">
-                      <SelectValue />
-                    </SelectTrigger>
+                  <Label htmlFor="smb-version">SMB Version</Label>
+                  <Select value={formData.smbVersion || 'automatic'} onValueChange={v => setFormData(prev => ({ ...prev, smbVersion: v as ConnectOptions['smbVersion'] }))}>
+                    <SelectTrigger id="smb-version"><SelectValue /></SelectTrigger>
                     <SelectContent>
                       <SelectItem value="automatic">Automatic</SelectItem>
-                      <SelectItem value="smb1">SMB1</SelectItem>
-                      <SelectItem value="smb2">SMB2</SelectItem>
-                      <SelectItem value="smb3">SMB3</SelectItem>
+                      <SelectItem value="smb1">SMB 1</SelectItem>
+                      <SelectItem value="smb2">SMB 2</SelectItem>
+                      <SelectItem value="smb3">SMB 3</SelectItem>
                     </SelectContent>
                   </Select>
-                </div>
-                
-                <div className="grid gap-2">
-                  <Label htmlFor="display-name">Display Name</Label>
-                  <Input
-                    id="display-name"
-                    placeholder="Optional"
-                    value={displayName}
-                    onChange={(e) => setDisplayName(e.target.value)}
-                  />
                 </div>
               </div>
             )}
@@ -348,66 +344,25 @@ export const ConnectionDialog = ({
             <div className="space-y-1">
               <div className="flex items-center justify-between p-3 border border-border rounded-lg">
                 <Label htmlFor="webdav-secure">Use HTTPS</Label>
-                <Switch
-                  id="webdav-secure"
-                  checked={webdavSecure}
-                  onCheckedChange={setWebdavSecure}
-                />
+                <Switch id="webdav-secure" checked={webdavSecure} onCheckedChange={setWebdavSecure} />
               </div>
-              {!webdavSecure && (
-                <p className="text-xs text-warning px-3 animate-fade-in">⚠️ Not secure</p>
-              )}
+              {!webdavSecure && <p className="text-xs text-warning px-3 animate-fade-in">⚠️ HTTP — connection is not encrypted</p>}
             </div>
-            <div className="grid gap-2">
-              <Label htmlFor="host">Host</Label>
-              <Input
-                id="host"
-                placeholder="webdav.example.com"
-                value={formData.host}
-                onChange={(e) => setFormData(prev => ({ ...prev, host: e.target.value }))}
-                required
-              />
-            </div>
-            <div className="grid gap-2">
-              <Label htmlFor="port">Port</Label>
-              <Input
-                id="port"
-                type="number"
-                value={formData.port}
-                onChange={(e) => setFormData(prev => ({ ...prev, port: parseInt(e.target.value) }))}
-                required
-              />
-            </div>
-            <div className="grid gap-2">
-              <Label htmlFor="username">Username</Label>
-              <Input
-                id="username"
-                value={formData.username}
-                onChange={(e) => setFormData(prev => ({ ...prev, username: e.target.value }))}
-                required
-              />
-            </div>
-            <div className="grid gap-2">
-              <Label htmlFor="password">Password</Label>
-              <Input
-                id="password"
-                type="password"
-                value={formData.password}
-                onChange={(e) => setFormData(prev => ({ ...prev, password: e.target.value }))}
-              />
-            </div>
-            
+            {hostField('dav.example.com')}
+            {portField()}
+            {credentialFields()}
             {showWebdavMore && (
-              <div className="space-y-4 animate-fade-in">
+              <div className="space-y-3 animate-fade-in">
                 <div className="grid gap-2">
-                  <Label htmlFor="display-name">Display Name</Label>
+                  <Label htmlFor="webdav-path">Base Path <span className="text-muted-foreground font-normal">(optional)</span></Label>
                   <Input
-                    id="display-name"
-                    placeholder="Optional"
-                    value={displayName}
-                    onChange={(e) => setDisplayName(e.target.value)}
+                    id="webdav-path"
+                    placeholder="/remote.php/dav/files/username/"
+                    value={formData.webdavBasePath || ''}
+                    onChange={(e) => setFormData(prev => ({ ...prev, webdavBasePath: e.target.value }))}
                   />
                 </div>
+                {displayNameField()}
               </div>
             )}
           </>
@@ -419,22 +374,14 @@ export const ConnectionDialog = ({
             <div className="text-center py-8 space-y-4">
               <p className="text-muted-foreground">Searching for local networks...</p>
               <div className="animate-pulse space-y-2">
-                <div className="h-2 bg-muted rounded w-3/4 mx-auto"></div>
-                <div className="h-2 bg-muted rounded w-1/2 mx-auto"></div>
+                <div className="h-2 bg-muted rounded w-3/4 mx-auto" />
+                <div className="h-2 bg-muted rounded w-1/2 mx-auto" />
               </div>
             </div>
             <div className="text-center">
-              <p className="text-sm text-muted-foreground mb-2">
-                No local networks found?
-              </p>
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => {
-                  setFormData(prev => ({ ...prev, protocol: 'smb' }));
-                }}
-              >
-                Manual Input
+              <p className="text-sm text-muted-foreground mb-2">No local networks found?</p>
+              <Button type="button" variant="outline" onClick={() => setFormData(prev => ({ ...prev, protocol: 'smb', port: 445 }))}>
+                Manual SMB Input
               </Button>
             </div>
           </div>
@@ -445,35 +392,47 @@ export const ConnectionDialog = ({
     }
   };
 
+  const hasMoreButton = (protocol: Protocol) =>
+    ['ftp', 'sftp', 'scp', 'ssh', 'smb', 'webdav'].includes(protocol);
+
+  const moreOpen = formData.protocol === 'ftp' ? showFtpMore
+    : ['sftp', 'scp', 'ssh'].includes(formData.protocol) ? showSftpMore
+    : formData.protocol === 'smb' ? showSmbMore
+    : showWebdavMore;
+
+  const toggleMore = () => {
+    if (!user) return;
+    if (formData.protocol === 'ftp') setShowFtpMore(v => !v);
+    else if (['sftp', 'scp', 'ssh'].includes(formData.protocol)) setShowSftpMore(v => !v);
+    else if (formData.protocol === 'smb') setShowSmbMore(v => !v);
+    else setShowWebdavMore(v => !v);
+  };
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[500px] max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Connect to Server</DialogTitle>
-          <DialogDescription>
-            Choose your protocol and enter connection details
-          </DialogDescription>
+          <DialogDescription>Choose a protocol and enter connection details</DialogDescription>
         </DialogHeader>
-        
+
         <form onSubmit={handleSubmit}>
           <div className="grid gap-4 py-4">
             <div className="grid gap-2">
               <Label htmlFor="protocol">Protocol</Label>
               <Select
                 value={formData.protocol}
-                onValueChange={(value: 'ftp' | 'ftps' | 'sftp' | 'smb' | 'webdav' | 'local') =>
-                  setFormData(prev => ({ ...prev, protocol: value }))
-                }
+                onValueChange={(value: Protocol) => setFormData(prev => ({ ...prev, protocol: value }))}
               >
-                <SelectTrigger id="protocol">
-                  <SelectValue />
-                </SelectTrigger>
+                <SelectTrigger id="protocol"><SelectValue /></SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="ftp" className="text-foreground">FTP / FTPS</SelectItem>
-                  <SelectItem value="sftp" className="text-foreground">SFTP (SSH File Transfer)</SelectItem>
-                  <SelectItem value="smb" className="text-foreground">SMB (Windows Share)</SelectItem>
-                  <SelectItem value="webdav" className="text-foreground">WebDAV</SelectItem>
-                  <SelectItem value="local" className="text-foreground">Local Network</SelectItem>
+                  <SelectItem value="ftp">FTP / FTPS</SelectItem>
+                  <SelectItem value="sftp">SFTP — SSH File Transfer</SelectItem>
+                  <SelectItem value="scp">SCP — Secure Copy</SelectItem>
+                  <SelectItem value="ssh">SSH — Secure Shell</SelectItem>
+                  <SelectItem value="smb">SMB — Windows Share</SelectItem>
+                  <SelectItem value="webdav">WebDAV</SelectItem>
+                  <SelectItem value="local">Local Network</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -484,70 +443,23 @@ export const ConnectionDialog = ({
           {formData.protocol !== 'local' && (
             <DialogFooter className="sm:justify-between">
               <div>
-                {(formData.protocol === 'ftp' || formData.protocol === 'ftps') && (
+                {hasMoreButton(formData.protocol) && (
                   <Button
                     type="button"
                     variant="ghost"
                     size="sm"
-                    onClick={() => user && setShowFtpMore(!showFtpMore)}
+                    onClick={toggleMore}
                     disabled={!user}
                     className={!user ? 'opacity-50' : ''}
                   >
-                    {!user ? <Lock className="h-3 w-3 mr-1" /> : null}
+                    {!user && <Lock className="h-3 w-3 mr-1" />}
                     More
-                    <ChevronDown className={`h-3 w-3 ml-1 transition-transform ${showFtpMore ? 'rotate-180' : ''}`} />
-                  </Button>
-                )}
-                {formData.protocol === 'sftp' && (
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => user && setShowSftpMore(!showSftpMore)}
-                    disabled={!user}
-                    className={!user ? 'opacity-50' : ''}
-                  >
-                    {!user ? <Lock className="h-3 w-3 mr-1" /> : null}
-                    More
-                    <ChevronDown className={`h-3 w-3 ml-1 transition-transform ${showSftpMore ? 'rotate-180' : ''}`} />
-                  </Button>
-                )}
-                {formData.protocol === 'smb' && (
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => user && setShowSmbMore(!showSmbMore)}
-                    disabled={!user}
-                    className={!user ? 'opacity-50' : ''}
-                  >
-                    {!user ? <Lock className="h-3 w-3 mr-1" /> : null}
-                    More
-                    <ChevronDown className={`h-3 w-3 ml-1 transition-transform ${showSmbMore ? 'rotate-180' : ''}`} />
-                  </Button>
-                )}
-                {formData.protocol === 'webdav' && (
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => user && setShowWebdavMore(!showWebdavMore)}
-                    disabled={!user}
-                    className={!user ? 'opacity-50' : ''}
-                  >
-                    {!user ? <Lock className="h-3 w-3 mr-1" /> : null}
-                    More
-                    <ChevronDown className={`h-3 w-3 ml-1 transition-transform ${showWebdavMore ? 'rotate-180' : ''}`} />
+                    <ChevronDown className={`h-3 w-3 ml-1 transition-transform ${moreOpen ? 'rotate-180' : ''}`} />
                   </Button>
                 )}
               </div>
               <div className="flex gap-2">
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => onOpenChange(false)}
-                  disabled={isConnecting}
-                >
+                <Button type="button" variant="outline" onClick={() => onOpenChange(false)} disabled={isConnecting}>
                   Cancel
                 </Button>
                 <Button type="submit" disabled={isConnecting}>

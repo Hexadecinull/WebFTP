@@ -1,0 +1,23 @@
+{
+  "name": "webftp-proxy",
+  "version": "1.0.0",
+  "description": "WebFTP backend proxy server — bridges the browser frontend to FTP/FTPS/SFTP/SCP/SSH/SMB/WebDAV servers",
+  "type": "module",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js",
+    "dev": "node --watch index.js"
+  },
+  "dependencies": {
+    "basic-ftp": "^5.0.5",
+    "cors": "^2.8.5",
+    "express": "^4.19.2",
+    "multer": "^1.4.5-lts.1",
+    "ssh2": "^1.16.0",
+    "ssh2-sftp-client": "^10.0.3",
+    "webdav": "^5.7.1"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}

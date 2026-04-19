@@ -1220,6 +1220,7 @@ export class FtpRepositoryImpl implements FtpRepository {
     const session: Session = {
       id: Math.random().toString(36).substring(7),
       host: options.host,
+      protocol: options.protocol,
       connected: true,
       currentPath: '/',
     };
