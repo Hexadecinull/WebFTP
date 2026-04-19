@@ -924,6 +924,5 @@ export const Settings = ({ onClose }: SettingsProps) => {
         </AlertDialogContent>
       </AlertDialog>
     </div>
-  </div>
   );
 };

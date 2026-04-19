@@ -11,55 +11,12 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { useAuth } from '@/contexts/AuthContext';
-
-interface BookmarkItem {
-  id: string;
-  path: string;
-  name: string;
-  host: string;
-  timestamp: number;
-}
+import { loadBookmarks, removeBookmark, type BookmarkItem } from '@/lib/bookmarkUtils';
 
 interface BookmarksDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onNavigate: (path: string) => void;
-}
-
-// Bookmarks are keyed by user ID (logged-in) or 'guest' so each account
-// gets its own list. Stored as JSON in localStorage under 'bookmarks_<key>'.
-function getStorageKey(userId: string | undefined): string {
-  return userId ? `bookmarks_${userId}` : 'bookmarks_guest';
-}
-
-export function loadBookmarks(userId: string | undefined): BookmarkItem[] {
-  try {
-    const raw = localStorage.getItem(getStorageKey(userId));
-    return raw ? JSON.parse(raw) : [];
-  } catch {
-    return [];
-  }
-}
-
-export function saveBookmark(
-  userId: string | undefined,
-  path: string,
-  host: string
-): void {
-  const bookmarks = loadBookmarks(userId);
-  const name = path.split('/').filter(Boolean).pop() || '/';
-  // Avoid duplicates for same host+path
-  if (bookmarks.some(b => b.path === path && b.host === host)) return;
-  const updated = [
-    { id: Date.now().toString(), path, name, host, timestamp: Date.now() },
-    ...bookmarks,
-  ].slice(0, 100);
-  localStorage.setItem(getStorageKey(userId), JSON.stringify(updated));
-}
-
-export function removeBookmark(userId: string | undefined, id: string): void {
-  const updated = loadBookmarks(userId).filter(b => b.id !== id);
-  localStorage.setItem(getStorageKey(userId), JSON.stringify(updated));
 }
 
 export const BookmarksDialog = ({ open, onOpenChange, onNavigate }: BookmarksDialogProps) => {
@@ -68,7 +25,6 @@ export const BookmarksDialog = ({ open, onOpenChange, onNavigate }: BookmarksDia
     loadBookmarks(user?.id)
   );
 
-  // Refresh list when dialog opens (might have been updated externally)
   const handleOpenChange = (v: boolean) => {
     if (v) setBookmarks(loadBookmarks(user?.id));
     onOpenChange(v);
