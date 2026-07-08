@@ -4,6 +4,11 @@
  * Bridges the browser-based frontend to real network protocols.
  * The browser cannot open raw TCP sockets, so all protocol work happens here.
  *
+ * Running at: https://webftp.ssmg4.dpdns.org (proxied via Nginx /api/)
+ *
+ * Configure via server/.env:
+ *   PORT=3001
+ *   ALLOWED_ORIGIN=https://webftp.ssmg4.dpdns.org
  * Supported protocols:
  *   FTP / FTPS  — via basic-ftp
  *   SFTP        — via ssh2-sftp-client
@@ -23,6 +28,7 @@
  * and uncomment the SMB section below.
  */
 
+import 'dotenv/config';
 import express from 'express';
 import cors from 'cors';
 import multer from 'multer';

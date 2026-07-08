@@ -28,3 +28,6 @@ package-lock.json
 
 # Environment file
 .env
+
+# Server environment
+server/.env

@@ -93,7 +93,7 @@ Remote server
 4. Create a `FtpRepositoryRemoteImpl` in `src/models/` that calls your backend instead of the VFS.
 5. The frontend switches between `FtpRepositoryImpl` (demo/local) and `FtpRepositoryRemoteImpl` (real) based on an env flag.
 
-This backend would be deployed separately (e.g. on a VPS, Railway, Render, or Fly.io) since InfinityFree does not support Node.js.
+This backend would be deployed on your server alongside the frontend, or on a separate VPS. See `server/README.md` for setup instructions.
 
 ---
 
@@ -124,7 +124,7 @@ Examples:
 ```
 feat(editor): add SCSS syntax highlighting
 fix(auth): clear password field on failed sign-in
-ci: add InfinityFree FTP deploy workflow
+ci: add self-hosted server deploy workflow
 docs: rewrite README with deployment guide
 ```
 

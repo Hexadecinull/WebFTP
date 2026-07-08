@@ -535,7 +535,7 @@ export const Settings = ({ onClose }: SettingsProps) => {
                   </p>
                   <Input
                     type="url"
-                    placeholder="https://your-proxy.example.com"
+                    placeholder="https://webftp.ssmg4.dpdns.org:3001"
                     value={settings.proxyUrl}
                     onChange={(e) => setSetting('proxyUrl', e.target.value)}
                   />

@@ -1,4 +1,4 @@
-name: Deploy to InfinityFree
+name: Deploy to Self-Hosted Server
 
 on:
   push:
@@ -6,8 +6,8 @@ on:
   workflow_dispatch:
 
 jobs:
-  build-and-deploy:
-    name: Build & Deploy via FTP
+  build:
+    name: Build
     runs-on: ubuntu-latest
 
     steps:
@@ -29,26 +29,25 @@ jobs:
           VITE_SUPABASE_PUBLISHABLE_KEY: ${{ secrets.VITE_SUPABASE_PUBLISHABLE_KEY }}
           VITE_SUPABASE_PROJECT_ID: ${{ secrets.VITE_SUPABASE_PROJECT_ID }}
 
-      # Writes a .htaccess so React Router client-side routes don't 404
-      # on hard refresh or direct URL access. InfinityFree runs Apache.
-      - name: Write .htaccess for SPA routing
-        run: |
-          {
-            echo 'Options -MultiViews'
-            echo 'RewriteEngine On'
-            echo 'RewriteCond %{REQUEST_FILENAME} !-f'
-            echo 'RewriteCond %{REQUEST_FILENAME} !-d'
-            echo 'RewriteRule ^ index.html [QSA,L]'
-          } > dist/.htaccess
-
-      - name: Deploy via FTP
-        uses: SamKirkland/FTP-Deploy-Action@v4.3.5
+      - name: Upload dist artifact
+        uses: actions/upload-artifact@v4
         with:
-          server: ${{ secrets.FTP_SERVER }}
-          username: ${{ secrets.FTP_USERNAME }}
-          password: ${{ secrets.FTP_PASSWORD }}
-          # Adjust this path to match your InfinityFree document root
-          server-dir: /webftp.ct.ws/htdocs/
-          local-dir: ./dist/
-          # Clean slate ensures old hashed asset files don't accumulate
-          dangerous-clean-slate: true
+          name: dist
+          path: dist/
+          retention-days: 1
+
+  deploy:
+    name: Deploy to webftp.ssmg4.dpdns.org
+    needs: build
+    runs-on: self-hosted
+
+    steps:
+      - name: Download dist artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: dist
+          path: dist/
+
+      - name: Deploy to web root
+        run: |
+          rsync -a --delete dist/ ${{ secrets.DEPLOY_PATH }}/

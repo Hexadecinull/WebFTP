@@ -145,43 +145,119 @@ You can find all three values in your Supabase project under **Project Settings 
 
 ## Deployment
 
-### Deploying to InfinityFree (recommended)
+### Deploying to a self-hosted server (recommended)
 
-InfinityFree is the recommended hosting option for WebFTP. It gives you a full Apache web host, a custom domain, and FTP access — all for free. Your Supabase project handles the database, auth, and storage remotely, so the frontend only needs a static file host with proper Apache rewrite support.
+WebFTP is designed to run on your own server. The server acts as both the web host for the frontend and the proxy for real protocol connections (FTP, FTPS, SFTP, SSH, SCP, WebDAV). This is the only way to get real connections working — browsers cannot open raw TCP sockets.
 
-#### Step 1 — Create an InfinityFree account
+#### Architecture
 
-Go to [infinityfree.net](https://infinityfree.net) and create a free account. Create a hosting account and note your FTP credentials from the control panel (FTP server hostname, username, and password).
+```
+Browser → webftp.ssmg4.dpdns.org (Nginx, serves the built frontend)
+                    ↓
+         Node.js proxy server (server/, port 3001)
+                    ↓
+         Remote FTP / SFTP / SSH / WebDAV servers
+```
 
-#### Step 2 — Add GitHub Secrets
+Cloudflare sits in front of the domain and handles HTTPS termination and DDoS protection.
 
-In your GitHub repo, go to **Settings → Secrets and variables → Actions** and add:
+#### Step 1 — Server prerequisites
+
+On your server, install:
+- Node.js 18+ (`sudo apt install nodejs npm` or use `nvm`)
+- Nginx (`sudo apt install nginx`)
+- Git (`sudo apt install git`)
+- pm2 for process management (`npm install -g pm2`)
+
+#### Step 2 — Clone and build the frontend
+
+```bash
+git clone https://github.com/Hexadecinull/WebFTP.git /var/www/webftp
+cd /var/www/webftp
+bun install
+bun run build
+# The built frontend is now in /var/www/webftp/dist
+```
+
+#### Step 3 — Set up the proxy server
+
+```bash
+cd /var/www/webftp/server
+npm install
+# Create a .env file
+echo "PORT=3001" > .env
+echo "ALLOWED_ORIGIN=https://webftp.ssmg4.dpdns.org" >> .env
+# Start with pm2 so it survives reboots
+pm2 start index.js --name webftp-proxy
+pm2 save
+pm2 startup
+```
+
+#### Step 4 — Configure Nginx
+
+Create `/etc/nginx/sites-available/webftp`:
+
+```nginx
+server {
+    listen 80;
+    server_name webftp.ssmg4.dpdns.org;
+
+    root /var/www/webftp/dist;
+    index index.html;
+
+    # Serve the frontend — fall back to index.html for React Router
+    location / {
+        try_files $uri $uri/ /index.html;
+    }
+
+    # Proxy API requests to the Node.js server
+    location /api/ {
+        proxy_pass http://localhost:3001;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection 'upgrade';
+        proxy_set_header Host $host;
+        proxy_cache_bypass $http_upgrade;
+    }
+}
+```
+
+```bash
+ln -s /etc/nginx/sites-available/webftp /etc/nginx/sites-enabled/
+nginx -t && systemctl reload nginx
+```
+
+Cloudflare handles HTTPS — set your SSL/TLS mode to **Full** in the Cloudflare dashboard.
+
+#### Step 5 — Add GitHub Secrets
+
+In your GitHub repo go to **Settings → Secrets and variables → Actions** and add:
 
 | Secret name | Value |
 |-------------|-------|
-| `FTP_SERVER` | Your InfinityFree FTP hostname (e.g. `ftpupload.net`) |
-| `FTP_USERNAME` | Your InfinityFree FTP username |
-| `FTP_PASSWORD` | Your InfinityFree FTP password |
 | `VITE_SUPABASE_URL` | Your Supabase project URL |
 | `VITE_SUPABASE_PUBLISHABLE_KEY` | Your Supabase anon/public key |
 | `VITE_SUPABASE_PROJECT_ID` | Your Supabase project ID |
+| `DEPLOY_PATH` | Absolute path to the web root on your server (e.g. `/var/www/webftp/dist`) |
 
-#### Step 3 — Configure Supabase redirect URLs
+#### Step 6 — Set up the self-hosted GitHub Actions runner
 
-In your Supabase project under **Authentication → URL Configuration**, add your InfinityFree domain to the **Redirect URLs** list (e.g. `https://yourdomain.infinityfreeapp.com`). This is required so that email verification links redirect to the right place after sign-up.
+The deploy workflow uses a self-hosted runner on your server to copy the built frontend without needing FTP or SSH credentials in secrets.
 
-#### Step 4 — Push to main
+1. In your GitHub repo go to **Settings → Actions → Runners → New self-hosted runner**
+2. Follow the instructions for Linux to download and configure the runner on your server
+3. Run it as a service: `sudo ./svc.sh install && sudo ./svc.sh start`
 
-The deploy workflow (`.github/workflows/deploy.yml`) will automatically:
-1. Build the Vite app with your Supabase secrets injected as env vars
-2. Write a `.htaccess` into `dist/` so React Router's client-side routes work on Apache without 404s on hard refresh
-3. Upload the built `dist/` folder to your InfinityFree `htdocs/` via FTP
+Once the runner is online, every push to `main` will:
+1. Build the app on GitHub's infrastructure with your Supabase secrets
+2. Upload the built `dist/` as a GitHub Actions artifact
+3. Your self-hosted runner downloads the artifact and `rsync`s it to `DEPLOY_PATH`
 
-Every subsequent push to `main` deploys only the files that changed (incremental upload — fast).
+#### Step 7 — Configure Supabase redirect URLs
 
-#### Connecting a custom domain
-
-In the InfinityFree control panel go to **Domains → Add Domain** and point your domain's DNS to InfinityFree's nameservers as instructed. Once DNS propagates, your WebFTP instance will be live at your custom domain.
+In your Supabase project under **Authentication → URL Configuration**:
+- **Site URL**: `https://webftp.ssmg4.dpdns.org`
+- **Redirect URLs**: add `https://webftp.ssmg4.dpdns.org/**`
 
 ---
 
@@ -203,15 +279,14 @@ The migrations in `supabase/migrations/` create the `profiles` table and the `av
 
 Two GitHub Actions workflows are included out of the box:
 
-**`ci.yml`** — runs on every push and pull request:
+**`ci.yml`** — runs on every push and pull request (GitHub-hosted runner):
 - ESLint
 - TypeScript type check (`tsc --noEmit`)
 - Production build
 
 **`deploy.yml`** — runs on every push to `main`:
-- Builds the app with Supabase secrets injected
-- Writes `.htaccess` for SPA routing on Apache
-- Deploys to InfinityFree via FTP (incremental)
+- GitHub-hosted runner: builds the app with Supabase secrets, uploads `dist/` as an artifact
+- Self-hosted runner (your server): downloads the artifact and `rsync`s it to the web root
 
 ---
 
