@@ -222,20 +222,10 @@ app.post('/api/download', async (req, res) => {
     res.setHeader('Content-Type', 'application/octet-stream');
 
     if (session.type === 'ftp') {
-      const { Writable } = await import('stream');
-      const chunks = [];
-      const writable = new Writable({
-        write(chunk, _encoding, callback) {
-          chunks.push(chunk);
-          callback();
-        },
-      });
-      await new Promise((resolve, reject) => {
-        writable.on('finish', resolve);
-        writable.on('error', reject);
-        session.client.downloadTo(writable, remotePath).then(resolve).catch(reject);
-      });
-      res.end(Buffer.concat(chunks));
+      const { PassThrough } = await import('stream');
+      const pass = new PassThrough();
+      pass.pipe(res);
+      await session.client.downloadTo(pass, remotePath);
       return;
     }
 

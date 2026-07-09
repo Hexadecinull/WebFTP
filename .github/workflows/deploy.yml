@@ -48,6 +48,20 @@ jobs:
           name: dist
           path: dist/
 
-      - name: Deploy to web root
+      - name: Deploy frontend to web root
         run: |
           rsync -a --delete dist/ ${{ secrets.DEPLOY_PATH }}/
+
+      - name: Update server code
+        run: |
+          cd /var/www/webftp
+          git pull --ff-only
+
+      - name: Install server dependencies
+        run: |
+          cd /var/www/webftp/server
+          npm install --production
+
+      - name: Restart proxy server
+        run: |
+          pm2 restart webftp-proxy
