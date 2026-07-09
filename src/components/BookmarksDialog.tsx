@@ -7,6 +7,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
@@ -48,6 +49,9 @@ export const BookmarksDialog = ({ open, onOpenChange, onNavigate }: BookmarksDia
             <Bookmark className="h-5 w-5" />
             Bookmarks
           </DialogTitle>
+          <DialogDescription>
+            Your saved folder bookmarks. Right-click any folder to add one.
+          </DialogDescription>
         </DialogHeader>
 
         <ScrollArea className="h-[400px]">

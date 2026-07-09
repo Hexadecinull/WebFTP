@@ -5,6 +5,7 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
+  DialogDescription,
   DialogFooter,
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
@@ -37,6 +38,7 @@ export const CreateFolderDialog = ({ open, onOpenChange, onCreateFolder }: Creat
             <FolderPlus className="h-5 w-5 text-accent" />
             Create New Folder
           </DialogTitle>
+          <DialogDescription>Enter a name for the new folder.</DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit}>
           <div className="space-y-4 py-4">

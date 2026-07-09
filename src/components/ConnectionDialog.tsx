@@ -9,13 +9,15 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Switch } from '@/components/ui/switch';
 import { ConnectOptions, Protocol } from '@/types/ftp';
 import { useAuth } from '@/contexts/AuthContext';
-import { Lock, ChevronDown } from 'lucide-react';
+import { Lock, ChevronDown, Eye, EyeOff, Save } from 'lucide-react';
 
 interface ConnectionDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onConnect: (options: ConnectOptions) => void;
+  onSave?: (options: ConnectOptions) => void;
   isConnecting: boolean;
+  prefill?: Partial<ConnectOptions>;
 }
 
 const DEFAULT_PORTS: Record<Protocol, number> = {
@@ -33,12 +35,14 @@ export const ConnectionDialog = ({
   open,
   onOpenChange,
   onConnect,
+  onSave,
   isConnecting,
+  prefill,
 }: ConnectionDialogProps) => {
   const [formData, setFormData] = useState<ConnectOptions>({
     host: '',
     port: 21,
-    username: 'anonymous',
+    username: '',
     password: '',
     protocol: 'ftp',
   });
@@ -48,6 +52,7 @@ export const ConnectionDialog = ({
   const [showSftpMore, setShowSftpMore] = useState(false);
   const [showSmbMore, setShowSmbMore] = useState(false);
   const [showWebdavMore, setShowWebdavMore] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
   const [keyFile, setKeyFile] = useState<File | null>(null);
   const { user } = useAuth();
 
@@ -71,10 +76,22 @@ export const ConnectionDialog = ({
     setKeyFile(null);
   }, [formData.protocol]);
 
-  // Reset on open
+  // Reset on open, applying any prefill from recent connections
   useEffect(() => {
     if (open) {
-      setFormData(prev => ({ ...prev, protocol: 'ftp', port: 21, username: 'anonymous' }));
+      setFormData({
+        host: prefill?.host ?? '',
+        port: prefill?.port ?? 21,
+        username: prefill?.username ?? '',
+        password: '',
+        protocol: prefill?.protocol ?? 'ftp',
+      });
+      setShowPassword(false);
+      setShowFtpMore(false);
+      setShowSftpMore(false);
+      setShowSmbMore(false);
+      setShowWebdavMore(false);
+      setKeyFile(null);
     }
   }, [open]);
 
@@ -134,12 +151,24 @@ export const ConnectionDialog = ({
       </div>
       <div className="grid gap-2">
         <Label htmlFor="password">Password</Label>
-        <Input
-          id="password"
-          type="password"
-          value={formData.password}
-          onChange={(e) => setFormData(prev => ({ ...prev, password: e.target.value }))}
-        />
+        <div className="relative">
+          <Input
+            id="password"
+            type={showPassword ? 'text' : 'password'}
+            value={formData.password}
+            onChange={(e) => setFormData(prev => ({ ...prev, password: e.target.value }))}
+            className={formData.password ? 'pr-10' : ''}
+          />
+          {formData.password && (
+            <button
+              type="button"
+              onClick={() => setShowPassword(v => !v)}
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+            >
+              {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+            </button>
+          )}
+        </div>
       </div>
     </>
   );
@@ -462,6 +491,16 @@ export const ConnectionDialog = ({
                 <Button type="button" variant="outline" onClick={() => onOpenChange(false)} disabled={isConnecting}>
                   Cancel
                 </Button>
+                {onSave && (
+                  <Button
+                    type="button"
+                    onClick={() => onSave(formData)}
+                    disabled={!formData.host || isConnecting}
+                  >
+                    <Save className="h-4 w-4 mr-2" />
+                    Save
+                  </Button>
+                )}
                 <Button type="submit" disabled={isConnecting}>
                   {isConnecting ? 'Connecting...' : 'Connect'}
                 </Button>

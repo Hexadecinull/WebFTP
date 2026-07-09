@@ -5,6 +5,7 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
+  DialogDescription,
   DialogFooter,
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
@@ -37,6 +38,7 @@ export const CreateFileDialog = ({ open, onOpenChange, onCreateFile }: CreateFil
             <FileText className="h-5 w-5 text-muted-foreground" />
             Create New File
           </DialogTitle>
+          <DialogDescription>Enter a name for the new file.</DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit}>
           <div className="space-y-4 py-4">

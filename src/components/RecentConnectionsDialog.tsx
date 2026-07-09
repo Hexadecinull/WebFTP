@@ -7,6 +7,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
@@ -23,7 +24,8 @@ interface RecentConnection {
 interface RecentConnectionsDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  onConnect: (options: ConnectOptions) => void;
+  // Called with a partial ConnectOptions so the ConnectionDialog opens pre-filled
+  onPrefill: (partial: Partial<ConnectOptions>) => void;
 }
 
 function getStorageKey(userId: string | undefined): string {
@@ -53,13 +55,12 @@ function formatTimestamp(timestamp: number): string {
   return `${diffDays} days ago`;
 }
 
-export const RecentConnectionsDialog = ({ open, onOpenChange, onConnect }: RecentConnectionsDialogProps) => {
+export const RecentConnectionsDialog = ({ open, onOpenChange, onPrefill }: RecentConnectionsDialogProps) => {
   const { user } = useAuth();
   const [recentConnections, setRecentConnections] = useState<RecentConnection[]>(() =>
     loadRecent(user?.id)
   );
 
-  // Refresh when dialog opens
   const handleOpenChange = (v: boolean) => {
     if (v) setRecentConnections(loadRecent(user?.id));
     onOpenChange(v);
@@ -73,22 +74,23 @@ export const RecentConnectionsDialog = ({ open, onOpenChange, onConnect }: Recen
   };
 
   const handleClearAll = () => {
-    const key = getStorageKey(user?.id);
-    localStorage.removeItem(key);
+    localStorage.removeItem(getStorageKey(user?.id));
     setRecentConnections([]);
   };
 
-  // Reconnect with minimal options — the user will need to re-enter password
-  // (we deliberately don't store passwords in recent connections)
-  const handleConnect = (conn: RecentConnection) => {
-    onConnect({
-      host: conn.host,
-      port: 21,
-      username: 'anonymous',
-      password: '',
-      protocol: (conn.protocol as ConnectOptions['protocol']) || 'ftp',
-    });
+  // Open ConnectionDialog pre-filled with host and protocol so user can enter password
+  const handleSelect = (conn: RecentConnection) => {
     onOpenChange(false);
+    onPrefill({
+      host: conn.host,
+      port: conn.protocol === 'sftp' || conn.protocol === 'ssh' || conn.protocol === 'scp' ? 22
+        : conn.protocol === 'smb' ? 445
+        : conn.protocol === 'webdav' ? 443
+        : 21,
+      protocol: (conn.protocol as ConnectOptions['protocol']) || 'ftp',
+      username: '',
+      password: '',
+    });
   };
 
   return (
@@ -106,6 +108,9 @@ export const RecentConnectionsDialog = ({ open, onOpenChange, onConnect }: Recen
               </Button>
             )}
           </div>
+          <DialogDescription>
+            Select a recent connection to open the connection form pre-filled.
+          </DialogDescription>
         </DialogHeader>
 
         <ScrollArea className="h-[400px]">
@@ -119,9 +124,10 @@ export const RecentConnectionsDialog = ({ open, onOpenChange, onConnect }: Recen
               recentConnections.map(conn => (
                 <div
                   key={conn.id}
-                  className="flex items-center justify-between p-3 border border-border rounded-lg hover:border-primary transition-colors group"
+                  className="flex items-center justify-between p-3 border border-border rounded-lg hover:border-primary transition-colors group cursor-pointer"
+                  onClick={() => handleSelect(conn)}
                 >
-                  <div className="flex-1 cursor-pointer min-w-0" onClick={() => handleConnect(conn)}>
+                  <div className="flex-1 min-w-0">
                     <p className="font-medium truncate">{conn.host}</p>
                     <p className="text-sm text-muted-foreground">
                       {(conn.protocol || 'FTP').toUpperCase()} — {formatTimestamp(conn.timestamp)}
@@ -131,7 +137,7 @@ export const RecentConnectionsDialog = ({ open, onOpenChange, onConnect }: Recen
                     size="sm"
                     variant="ghost"
                     className="opacity-0 group-hover:opacity-100 transition-opacity shrink-0"
-                    onClick={() => handleDelete(conn.id)}
+                    onClick={(e) => { e.stopPropagation(); handleDelete(conn.id); }}
                   >
                     <Trash2 className="h-4 w-4" />
                   </Button>

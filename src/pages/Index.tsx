@@ -105,6 +105,7 @@ const Index = () => {
 
   // View state
   const [connectionDialogOpen, setConnectionDialogOpen] = useState(false);
+  const [connectionPrefill, setConnectionPrefill] = useState<Partial<ConnectOptions> | undefined>(undefined);
   const [selectedFile, setSelectedFile] = useState<FtpEntry>();
   const [dragActive, setDragActive] = useState(false);
   const [editingFile, setEditingFile] = useState<{ path: string; name: string; content: string } | null>(null);
@@ -506,7 +507,14 @@ const Index = () => {
           open={connectionDialogOpen}
           onOpenChange={setConnectionDialogOpen}
           onConnect={handleConnect}
+          onSave={(options) => {
+            const stored = JSON.parse(localStorage.getItem('savedConnections') || '[]');
+            const entry = { ...options, id: Date.now().toString(), name: options.displayName || options.host };
+            localStorage.setItem('savedConnections', JSON.stringify([...stored, entry]));
+            toast({ title: 'Connection saved', description: `${entry.name} saved to connections.` });
+          }}
           isConnecting={isConnecting}
+          prefill={connectionPrefill}
         />
 
         {/* File Editor */}
@@ -540,7 +548,10 @@ const Index = () => {
         <RecentConnectionsDialog
           open={recentConnectionsOpen}
           onOpenChange={setRecentConnectionsOpen}
-          onConnect={handleConnect}
+          onPrefill={(partial) => {
+            setConnectionPrefill(partial);
+            setConnectionDialogOpen(true);
+          }}
         />
 
         {/* Saved Connections */}

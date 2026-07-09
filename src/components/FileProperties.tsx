@@ -8,6 +8,7 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
+  DialogDescription,
 } from '@/components/ui/dialog';
 import { File, Folder } from 'lucide-react';
 
@@ -36,6 +37,7 @@ export const FileProperties = ({
             )}
             Properties
           </DialogTitle>
+          <DialogDescription>Details for {file.name}</DialogDescription>
         </DialogHeader>
         
         <div className="space-y-4">

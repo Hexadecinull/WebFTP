@@ -3,6 +3,7 @@
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
@@ -26,6 +27,9 @@ export const SavedConnectionsDialog = ({ open, onOpenChange, onConnect }: SavedC
       <DialogContent className="max-w-2xl">
         <DialogHeader>
           <DialogTitle>Saved Connections</DialogTitle>
+          <DialogDescription>
+            Your saved server connections. Click one to connect.
+          </DialogDescription>
         </DialogHeader>
         <SavedConnections onConnect={handleConnect} />
       </DialogContent>
