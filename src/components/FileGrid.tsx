@@ -8,7 +8,7 @@ import { isEditableFile } from '@/lib/fileUtils';
 
 interface FileGridProps {
   files: FtpEntry[];
-  onFileClick: (file: FtpEntry) => void;
+  onFileClick: (file: FtpEntry, ctrlKey: boolean) => void;
   onFileDoubleClick: (file: FtpEntry) => void;
   onDownload: (file: FtpEntry) => void;
   onDelete: (file: FtpEntry) => void;
@@ -18,30 +18,25 @@ interface FileGridProps {
   onRename?: (file: FtpEntry) => void;
   onDownloadFolder?: (file: FtpEntry) => void;
   onBookmark?: (file: FtpEntry) => void;
-  selectedFile?: FtpEntry;
+  onCopy?: (file: FtpEntry) => void;
+  onCut?: (file: FtpEntry) => void;
+  onPaste?: () => void;
+  onSelectAll?: () => void;
+  selectedFiles: FtpEntry[];
+  hasClipboard?: boolean;
   onDragStart?: (e: React.DragEvent, file: FtpEntry) => void;
   onDropOnFolder?: (e: React.DragEvent, folder: FtpEntry) => void;
 }
 
 export const FileGrid = ({
-  files,
-  onFileClick,
-  onFileDoubleClick,
-  onDownload,
-  onDelete,
-  onEdit,
-  onOpen,
-  onProperties,
-  onRename,
-  onDownloadFolder,
-  onBookmark,
-  selectedFile,
-  onDragStart,
-  onDropOnFolder,
+  files, onFileClick, onFileDoubleClick, onDownload, onDelete, onEdit,
+  onOpen, onProperties, onRename, onDownloadFolder, onBookmark,
+  onCopy, onCut, onPaste, onSelectAll, selectedFiles, hasClipboard,
+  onDragStart, onDropOnFolder,
 }: FileGridProps) => {
   return (
     <ScrollArea className="h-full">
-      <div className="p-4 grid grid-cols-[repeat(auto-fill,minmax(100px,1fr))] gap-3">
+      <div className="p-4 grid grid-cols-[repeat(auto-fill,minmax(130px,1fr))] gap-4">
         {files.map((file) => (
           <FileContextMenu
             key={file.path}
@@ -54,6 +49,11 @@ export const FileGrid = ({
             onRename={onRename}
             onDownloadFolder={onDownloadFolder}
             onBookmark={onBookmark}
+            onCopy={onCopy}
+            onCut={onCut}
+            onPaste={onPaste}
+            onSelectAll={onSelectAll}
+            hasClipboard={hasClipboard}
             canEdit={!file.isDirectory && isEditableFile(file.name)}
           >
             <div
@@ -77,11 +77,11 @@ export const FileGrid = ({
                 }
               }}
               className={`
-                flex flex-col items-center gap-1.5 p-3 rounded-lg cursor-pointer transition-all
+                flex flex-col items-center gap-2 p-4 rounded-xl cursor-pointer transition-all
                 hover:bg-accent/50
-                ${selectedFile?.path === file.path ? 'bg-primary/10 ring-1 ring-primary' : ''}
+                ${selectedFiles.some(f => f.path === file.path) ? 'bg-primary/10 ring-1 ring-primary' : ''}
               `}
-              onClick={() => onFileClick(file)}
+              onClick={(e) => onFileClick(file, e.ctrlKey || e.metaKey)}
               onDoubleClick={() => {
                 if (file.name === '..' && file.isDirectory) {
                   onOpen(file);
@@ -90,14 +90,16 @@ export const FileGrid = ({
                 }
               }}
             >
-              <div className="h-10 w-10 flex items-center justify-center">
+              <div className="h-14 w-14 flex items-center justify-center">
                 {file.name === '..' ? (
-                  <ArrowLeft className="h-6 w-6 text-muted-foreground" />
+                  <ArrowLeft className="h-8 w-8 text-muted-foreground" />
                 ) : (
-                  <FileIcon filename={file.name} isDirectory={file.isDirectory} className="scale-150" />
+                  <div className="scale-[2.2] origin-center">
+                    <FileIcon filename={file.name} isDirectory={file.isDirectory} />
+                  </div>
                 )}
               </div>
-              <span className="text-xs text-center truncate w-full font-medium">{file.name}</span>
+              <span className="text-xs text-center truncate w-full font-medium leading-tight">{file.name}</span>
               {file.size !== undefined && !file.isDirectory && (
                 <span className="text-[10px] text-muted-foreground">{formatBytes(file.size)}</span>
               )}

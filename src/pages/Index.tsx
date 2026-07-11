@@ -1,6 +1,6 @@
 // Main Application - MVP Pattern Integration
 
-import { useState, useMemo, useCallback, useEffect } from 'react';
+import { useState, useMemo, useCallback, useEffect, useRef } from 'react';
 import { SidebarProvider, SidebarTrigger } from '@/components/ui/sidebar';
 import { AppSidebar } from '@/components/AppSidebar';
 import { ConnectionDialog } from '@/components/ConnectionDialog';
@@ -21,9 +21,12 @@ import { CreateFileDialog } from '@/components/CreateFileDialog';
 import { UploadDialog } from '@/components/UploadDialog';
 import { RenameFolderDialog } from '@/components/RenameFolderDialog';
 import { DownloadFolderDialog } from '@/components/DownloadFolderDialog';
+import { KeyboardShortcuts } from '@/components/KeyboardShortcuts';
+import { StatusBar } from '@/components/StatusBar';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
-import { RefreshCw, Upload, FolderPlus, FilePlus, Trash2, Settings as SettingsIcon, List, LayoutGrid, MoreHorizontal } from 'lucide-react';
+import { RefreshCw, Upload, FolderPlus, FilePlus, Trash2, Settings as SettingsIcon, List, LayoutGrid, MoreHorizontal, Search, X, Keyboard } from 'lucide-react';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { FtpEntry, ConnectOptions } from '@/types/ftp';
 import { isEditableFile } from '@/lib/fileUtils';
@@ -106,7 +109,8 @@ const Index = () => {
   // View state
   const [connectionDialogOpen, setConnectionDialogOpen] = useState(false);
   const [connectionPrefill, setConnectionPrefill] = useState<Partial<ConnectOptions> | undefined>(undefined);
-  const [selectedFile, setSelectedFile] = useState<FtpEntry>();
+  const [selectedFiles, setSelectedFiles] = useState<FtpEntry[]>([]);
+  const [clipboard, setClipboard] = useState<{ files: FtpEntry[]; operation: 'copy' | 'move' } | null>(null);
   const [dragActive, setDragActive] = useState(false);
   const [editingFile, setEditingFile] = useState<{ path: string; name: string; content: string } | null>(null);
   const [propertiesFile, setPropertiesFile] = useState<FtpEntry | null>(null);
@@ -117,7 +121,47 @@ const Index = () => {
   const [authDialogOpen, setAuthDialogOpen] = useState(false);
   const [viewMode, setViewMode] = useState<'list' | 'grid'>('list');
   const [showTransferQueue, setShowTransferQueue] = useState(!isMobile);
-  
+  const [keyboardShortcutsOpen, setKeyboardShortcutsOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [searchActive, setSearchActive] = useState(false);
+  const searchInputRef = useRef<HTMLInputElement>(null);
+
+  // Navigation history for back/forward
+  const [navHistory, setNavHistory] = useState<string[]>(['/']);
+  const [navIndex, setNavIndex] = useState(0);
+  const canGoBack = navIndex > 0;
+  const canGoForward = navIndex < navHistory.length - 1;
+
+  // Inactivity timeout — disconnect after 5 minutes
+  const lastActivityRef = useRef(Date.now());
+  const inactivityTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  useEffect(() => {
+    const updateActivity = () => { lastActivityRef.current = Date.now(); };
+    window.addEventListener('mousemove', updateActivity);
+    window.addEventListener('keydown', updateActivity);
+    window.addEventListener('click', updateActivity);
+    return () => {
+      window.removeEventListener('mousemove', updateActivity);
+      window.removeEventListener('keydown', updateActivity);
+      window.removeEventListener('click', updateActivity);
+    };
+  }, []);
+
+  useEffect(() => {
+    if (session) {
+      inactivityTimerRef.current = setInterval(() => {
+        if (Date.now() - lastActivityRef.current > 5 * 60 * 1000) {
+          disconnect();
+          toast({ title: 'Disconnected due to inactivity', description: 'You were inactive for 5 minutes.', variant: 'destructive' });
+        }
+      }, 30000);
+    } else {
+      if (inactivityTimerRef.current) clearInterval(inactivityTimerRef.current);
+    }
+    return () => { if (inactivityTimerRef.current) clearInterval(inactivityTimerRef.current); };
+  }, [session, disconnect]);
+
   // New dialog states
   const [createFolderOpen, setCreateFolderOpen] = useState(false);
   const [createFileOpen, setCreateFileOpen] = useState(false);
@@ -128,23 +172,71 @@ const Index = () => {
   // Drag-and-drop file moving state
   const [draggedFile, setDraggedFile] = useState<FtpEntry | null>(null);
 
+  // Track navigation history when path changes
+  useEffect(() => {
+    if (!session) return;
+    setNavHistory(prev => {
+      const trimmed = prev.slice(0, navIndex + 1);
+      if (trimmed[trimmed.length - 1] === currentPath) return prev;
+      return [...trimmed, currentPath];
+    });
+    setNavIndex(prev => prev + 1);
+    setSelectedFiles([]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentPath]);
+
+  const handleGoBack = useCallback(() => {
+    if (!canGoBack) return;
+    const newIndex = navIndex - 1;
+    setNavIndex(newIndex);
+    navigateToPath(navHistory[newIndex]);
+  }, [canGoBack, navIndex, navHistory, navigateToPath]);
+
+  const handleGoForward = useCallback(() => {
+    if (!canGoForward) return;
+    const newIndex = navIndex + 1;
+    setNavIndex(newIndex);
+    navigateToPath(navHistory[newIndex]);
+  }, [canGoForward, navIndex, navHistory, navigateToPath]);
+
   // Save a recent connection entry whenever a new session is established.
-  // Stores only the fields needed to reconnect (not the live session object).
-  // Key is per-user so each account gets its own history; guests share one list.
   useEffect(() => {
     if (!session) return;
     const storageKey = user ? `recentConnections_${user.id}` : 'recentConnections_guest';
     const existing = JSON.parse(localStorage.getItem(storageKey) || '[]') as Array<{ id: string; host: string; timestamp: number }>;
-    const entry = {
-      id: Date.now().toString(),
-      host: session.host,
-      port: session.currentPath, // path stored for context only
-      protocol: session.protocol,
-      timestamp: Date.now(),
-    };
-    const updated = [entry, ...existing.filter(c => c.host !== session.host)].slice(0, 10);
+    const entry = { id: Date.now().toString(), host: session.host, protocol: session.protocol, timestamp: Date.now() };
+    const updated = [entry, ...existing.filter((c: { host: string }) => c.host !== session.host)].slice(0, 10);
     localStorage.setItem(storageKey, JSON.stringify(updated));
   }, [session, user]);
+
+  // Keyboard shortcuts
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (!session) return;
+      const tag = (e.target as HTMLElement).tagName;
+      const inInput = tag === 'INPUT' || tag === 'TEXTAREA' || (e.target as HTMLElement).isContentEditable;
+
+      if (e.key === 'F1' || (e.key === '?' && !inInput)) { e.preventDefault(); setKeyboardShortcutsOpen(true); }
+      if (e.key === 'F5') { e.preventDefault(); refresh(); }
+      if (e.key === 'F2' && selectedFiles.length === 1) { e.preventDefault(); setRenameFolderFile(selectedFiles[0]); }
+      if (e.key === 'Delete' && selectedFiles.length > 0 && !inInput) { e.preventDefault(); selectedFiles.forEach(f => deleteFile(f.path)); setSelectedFiles([]); }
+      if (e.key === 'Backspace' && !inInput) { e.preventDefault(); navigateToPath(currentPath.split('/').slice(0, -1).join('/') || '/'); }
+      if (e.altKey && e.key === 'ArrowLeft') { e.preventDefault(); handleGoBack(); }
+      if (e.altKey && e.key === 'ArrowRight') { e.preventDefault(); handleGoForward(); }
+      if (e.ctrlKey && e.key === 'a' && !inInput) { e.preventDefault(); setSelectedFiles(files); }
+      if (e.ctrlKey && e.key === 'c' && selectedFiles.length > 0 && !inInput) { e.preventDefault(); setClipboard({ files: selectedFiles, operation: 'copy' }); toast({ title: `Copied ${selectedFiles.length} item(s)` }); }
+      if (e.ctrlKey && e.key === 'x' && selectedFiles.length > 0 && !inInput) { e.preventDefault(); setClipboard({ files: selectedFiles, operation: 'move' }); toast({ title: `Cut ${selectedFiles.length} item(s)` }); }
+      if (e.ctrlKey && e.key === 'v' && clipboard && !inInput) { e.preventDefault(); handlePaste(); }
+      if (e.ctrlKey && e.key === 'f') { e.preventDefault(); setSearchActive(true); setTimeout(() => searchInputRef.current?.focus(), 50); }
+      if (e.key === 'Escape' && searchActive) { setSearchActive(false); setSearchQuery(''); }
+      if (e.shiftKey && e.key === 'U' && !inInput) { e.preventDefault(); setUploadDialogOpen(true); }
+      if (e.shiftKey && e.key === 'N' && !inInput) { e.preventDefault(); setCreateFileOpen(true); }
+      if (e.shiftKey && e.key === 'F' && !inInput) { e.preventDefault(); setCreateFolderOpen(true); }
+      if (e.shiftKey && e.key === 'D' && selectedFiles.length > 0 && !inInput) { e.preventDefault(); selectedFiles.forEach(f => { if (!f.isDirectory) startDownload(f.path, f.name); }); }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [session, selectedFiles, clipboard, searchActive, files, currentPath, refresh, deleteFile, navigateToPath, handleGoBack, handleGoForward, startDownload]);
 
   // View event handlers
   const handleConnect = useCallback(async (options: ConnectOptions) => {
@@ -152,16 +244,26 @@ const Index = () => {
     setConnectionDialogOpen(false);
     setSavedConnectionsOpen(false);
     setRecentConnectionsOpen(false);
+    setNavHistory(['/']);
+    setNavIndex(0);
   }, [connect]);
 
-  const handleFileClick = useCallback((file: FtpEntry) => {
-    setSelectedFile(file);
+  const handleFileClick = useCallback((file: FtpEntry, ctrlKey: boolean) => {
+    if (ctrlKey) {
+      setSelectedFiles(prev =>
+        prev.some(f => f.path === file.path)
+          ? prev.filter(f => f.path !== file.path)
+          : [...prev, file]
+      );
+    } else {
+      setSelectedFiles([file]);
+    }
   }, []);
 
   const handleFileDoubleClick = useCallback(async (file: FtpEntry) => {
     if (file.isDirectory) {
       navigateToPath(file.path);
-      setSelectedFile(undefined);
+      setSelectedFiles([]);
     } else if (isEditableFile(file.name)) {
       try {
         const content = await readFile(file.path);
@@ -171,6 +273,25 @@ const Index = () => {
       }
     }
   }, [navigateToPath, readFile]);
+
+  const handlePaste = useCallback(async () => {
+    if (!clipboard) return;
+    for (const file of clipboard.files) {
+      const destPath = `${currentPath}/${file.name}`.replace('//', '/');
+      try {
+        if (clipboard.operation === 'move') {
+          await renameFile(file.path, destPath);
+        } else {
+          const content = await readFile(file.path);
+          await writeFile(destPath, content);
+        }
+      } catch {
+        toast({ title: `Failed to ${clipboard.operation} ${file.name}`, variant: 'destructive' });
+      }
+    }
+    if (clipboard.operation === 'move') setClipboard(null);
+    refresh();
+  }, [clipboard, currentPath, renameFile, readFile, writeFile, refresh]);
 
   const handleUploadFiles = useCallback((files: File[]) => {
     files.forEach(file => {
@@ -196,13 +317,13 @@ const Index = () => {
   }, [currentPath, startUpload, session, draggedFile]);
 
   const handleDeleteClick = useCallback(() => {
-    if (selectedFile && selectedFile.name !== '..') {
-      if (confirm(`Delete ${selectedFile.name}?`)) {
-        deleteFile(selectedFile.path);
-        setSelectedFile(undefined);
-      }
+    const toDelete = selectedFiles.filter(f => f.name !== '..');
+    if (toDelete.length === 0) return;
+    if (confirm(`Delete ${toDelete.length === 1 ? toDelete[0].name : `${toDelete.length} items`}?`)) {
+      toDelete.forEach(f => deleteFile(f.path));
+      setSelectedFiles([]);
     }
-  }, [selectedFile, deleteFile]);
+  }, [selectedFiles, deleteFile]);
 
   const handleCreateFolder = useCallback((name: string) => {
     createFolder(name);
@@ -294,13 +415,19 @@ const Index = () => {
     toast({ title: 'Bookmarked', description: `${file.name} added to bookmarks` });
   }, [session, user]);
 
+  const displayedFiles = useMemo(() => {
+    if (!searchQuery.trim()) return files;
+    const q = searchQuery.toLowerCase();
+    return files.filter(f => f.name.toLowerCase().includes(q));
+  }, [files, searchQuery]);
+
   const commonFileProps = {
-    files,
+    files: displayedFiles,
     onFileClick: handleFileClick,
     onFileDoubleClick: handleFileDoubleClick,
     onDownload: handleDownloadFile,
     onDelete: (file: FtpEntry) => {
-      if (confirm(`Delete ${file.name}?`)) deleteFile(file.path);
+      if (confirm(`Delete ${file.name}?`)) { deleteFile(file.path); setSelectedFiles(prev => prev.filter(f => f.path !== file.path)); }
     },
     onEdit: handleEditFile,
     onOpen: handleOpenFolder,
@@ -308,7 +435,12 @@ const Index = () => {
     onRename: (file: FtpEntry) => setRenameFolderFile(file),
     onDownloadFolder: (file: FtpEntry) => setDownloadFolderFile(file),
     onBookmark: handleBookmark,
-    selectedFile,
+    onCopy: (file: FtpEntry) => { setClipboard({ files: [file], operation: 'copy' }); toast({ title: `Copied ${file.name}` }); },
+    onCut: (file: FtpEntry) => { setClipboard({ files: [file], operation: 'move' }); toast({ title: `Cut ${file.name}` }); },
+    onPaste: handlePaste,
+    onSelectAll: () => setSelectedFiles(files),
+    selectedFiles,
+    hasClipboard: !!clipboard,
     onDragStart: handleFileDragStart,
     onDropOnFolder: handleDropOnFolder,
   };
@@ -387,6 +519,14 @@ const Index = () => {
                     <RefreshCw className={`h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} />
                   </Button>
 
+                  <Button variant="ghost" size="sm" onClick={() => setSearchActive(v => !v)} title="Search (Ctrl+F)">
+                    <Search className="h-4 w-4" />
+                  </Button>
+
+                  <Button variant="ghost" size="sm" onClick={() => setKeyboardShortcutsOpen(true)} title="Keyboard shortcuts (?)">
+                    <Keyboard className="h-4 w-4" />
+                  </Button>
+
                   {/* Desktop: show actions inline */}
                   {!isMobile && (
                     <>
@@ -399,7 +539,7 @@ const Index = () => {
                       <Button variant="ghost" size="sm" onClick={() => setCreateFileOpen(true)} title="New File">
                         <FilePlus className="h-4 w-4" />
                       </Button>
-                      {selectedFile && selectedFile.name !== '..' && (
+                      {selectedFiles.some(f => f.name !== '..') && (
                         <Button variant="ghost" size="sm" onClick={handleDeleteClick}>
                           <Trash2 className="h-4 w-4" />
                         </Button>
@@ -428,10 +568,10 @@ const Index = () => {
                           <FilePlus className="h-4 w-4 mr-2" />
                           New File
                         </DropdownMenuItem>
-                        {selectedFile && selectedFile.name !== '..' && (
+                        {selectedFiles.some(f => f.name !== '..') && (
                           <DropdownMenuItem onClick={handleDeleteClick} className="text-destructive focus:text-destructive">
                             <Trash2 className="h-4 w-4 mr-2" />
-                            Delete {selectedFile.name}
+                            Delete {selectedFiles.length === 1 ? selectedFiles[0].name : `${selectedFiles.length} items`}
                           </DropdownMenuItem>
                         )}
                       </DropdownMenuContent>
@@ -450,8 +590,39 @@ const Index = () => {
           <div className="flex-1 flex overflow-hidden">
             {/* File Explorer */}
             <div className="flex-1 flex flex-col min-w-0">
-              {session && <Breadcrumb path={currentPath} onNavigate={navigateToPath} />}
-              
+              {session && (
+                <Breadcrumb
+                  path={currentPath}
+                  onNavigate={navigateToPath}
+                  canGoBack={canGoBack}
+                  canGoForward={canGoForward}
+                  onGoBack={handleGoBack}
+                  onGoForward={handleGoForward}
+                />
+              )}
+
+              {/* Search bar — shown when active (Ctrl+F) */}
+              {searchActive && session && (
+                <div className="flex items-center gap-2 px-3 py-2 border-b border-border bg-card">
+                  <Search className="h-4 w-4 text-muted-foreground shrink-0" />
+                  <input
+                    ref={searchInputRef}
+                    type="text"
+                    className="flex-1 bg-transparent text-sm outline-none placeholder:text-muted-foreground"
+                    placeholder="Search files and folders…"
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    onKeyDown={(e) => { if (e.key === 'Escape') { setSearchActive(false); setSearchQuery(''); } }}
+                  />
+                  {searchQuery && (
+                    <span className="text-xs text-muted-foreground shrink-0">{displayedFiles.length} result{displayedFiles.length !== 1 ? 's' : ''}</span>
+                  )}
+                  <Button variant="ghost" size="icon" className="h-6 w-6 shrink-0" onClick={() => { setSearchActive(false); setSearchQuery(''); }}>
+                    <X className="h-3.5 w-3.5" />
+                  </Button>
+                </div>
+              )}
+
               <div
                 className={`flex-1 relative ${dragActive ? 'bg-accent/20' : ''}`}
                 onDragOver={(e) => {
@@ -467,6 +638,9 @@ const Index = () => {
                     onCreateFolder={() => setCreateFolderOpen(true)}
                     onUpload={() => setUploadDialogOpen(true)}
                     onRefresh={refresh}
+                    onSelectAll={() => setSelectedFiles(files)}
+                    onPaste={handlePaste}
+                    hasClipboard={!!clipboard}
                   >
                     <div className="h-full">
                       {fileExplorerContent}
@@ -485,6 +659,14 @@ const Index = () => {
                   </div>
                 )}
               </div>
+              {/* Status bar — only shown when connected */}
+              {session && (
+                <StatusBar
+                  totalItems={displayedFiles.length}
+                  selectedCount={selectedFiles.length}
+                  currentPath={currentPath}
+                />
+              )}
             </div>
 
             {/* Transfer Queue - responsive */}
@@ -501,6 +683,9 @@ const Index = () => {
             )}
           </div>
         </div>
+
+        {/* Keyboard Shortcuts Dialog */}
+        <KeyboardShortcuts open={keyboardShortcutsOpen} onOpenChange={setKeyboardShortcutsOpen} />
 
         {/* Connection Dialog */}
         <ConnectionDialog

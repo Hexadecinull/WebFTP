@@ -118,7 +118,12 @@ export default function Auth({ onClose }: { onClose?: () => void }) {
     }
     const { error } = await signUp(email, password);
     if (error) {
-      setSignUpError(error.message || 'An error occurred during sign up. Please try again.');
+      const msg = error.message?.toLowerCase() || '';
+      if (msg.includes('already registered') || msg.includes('already in use') || msg.includes('user_already_exists') || msg.includes('email address is already')) {
+        setSignUpError('This email address is already registered. Try signing in instead.');
+      } else {
+        setSignUpError(error.message || 'An error occurred during sign up. Please try again.');
+      }
     } else {
       setSignUpSuccess(true);
     }
@@ -334,7 +339,7 @@ export default function Auth({ onClose }: { onClose?: () => void }) {
 
             {/* Sign In */}
             <TabsContent value="signin">
-              <form onSubmit={handleSignIn} className="flex flex-col gap-4 pt-4">
+              <form onSubmit={handleSignIn} className="flex flex-col gap-4 pt-4 min-h-[300px]">
                 <div className="space-y-2">
                   <Label htmlFor="signin-email">Email</Label>
                   <Input
@@ -392,7 +397,7 @@ export default function Auth({ onClose }: { onClose?: () => void }) {
                   </p>
                 </div>
               ) : (
-                <form onSubmit={handleSignUp} className="flex flex-col gap-4 pt-4">
+                <form onSubmit={handleSignUp} className="flex flex-col gap-4 pt-4 min-h-[300px]">
                   <div className="space-y-2">
                     <Label htmlFor="signup-email">Email</Label>
                     <Input

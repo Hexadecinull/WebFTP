@@ -7,7 +7,7 @@ import { FileIcon } from './FileIcon';
 
 interface FileListProps {
   files: FtpEntry[];
-  onFileClick: (file: FtpEntry) => void;
+  onFileClick: (file: FtpEntry, ctrlKey: boolean) => void;
   onFileDoubleClick: (file: FtpEntry) => void;
   onDownload: (file: FtpEntry) => void;
   onDelete: (file: FtpEntry) => void;
@@ -17,26 +17,21 @@ interface FileListProps {
   onRename?: (file: FtpEntry) => void;
   onDownloadFolder?: (file: FtpEntry) => void;
   onBookmark?: (file: FtpEntry) => void;
-  selectedFile?: FtpEntry;
+  onCopy?: (file: FtpEntry) => void;
+  onCut?: (file: FtpEntry) => void;
+  onPaste?: () => void;
+  onSelectAll?: () => void;
+  selectedFiles: FtpEntry[];
+  hasClipboard?: boolean;
   onDragStart?: (e: React.DragEvent, file: FtpEntry) => void;
   onDropOnFolder?: (e: React.DragEvent, folder: FtpEntry) => void;
 }
 
 export const FileList = ({
-  files,
-  onFileClick,
-  onFileDoubleClick,
-  onDownload,
-  onDelete,
-  onEdit,
-  onOpen,
-  onProperties,
-  onRename,
-  onDownloadFolder,
-  onBookmark,
-  selectedFile,
-  onDragStart,
-  onDropOnFolder,
+  files, onFileClick, onFileDoubleClick, onDownload, onDelete, onEdit,
+  onOpen, onProperties, onRename, onDownloadFolder, onBookmark,
+  onCopy, onCut, onPaste, onSelectAll, selectedFiles, hasClipboard,
+  onDragStart, onDropOnFolder,
 }: FileListProps) => {
   return (
     <ScrollArea className="h-full">
@@ -53,6 +48,11 @@ export const FileList = ({
             onRename={onRename}
             onDownloadFolder={onDownloadFolder}
             onBookmark={onBookmark}
+            onCopy={onCopy}
+            onCut={onCut}
+            onPaste={onPaste}
+            onSelectAll={onSelectAll}
+            hasClipboard={hasClipboard}
             canEdit={!file.isDirectory && isEditableFile(file.name)}
           >
             <div
@@ -77,9 +77,9 @@ export const FileList = ({
               }}
               className={`
                 flex items-center gap-3 px-4 py-3 cursor-pointer transition-colors hover:bg-accent/50
-                ${selectedFile?.path === file.path ? 'bg-primary/10 border-l-2 border-primary' : ''}
+                ${selectedFiles.some(f => f.path === file.path) ? 'bg-primary/10 border-l-2 border-primary' : ''}
               `}
-              onClick={() => onFileClick(file)}
+              onClick={(e) => onFileClick(file, e.ctrlKey || e.metaKey)}
               onDoubleClick={() => {
                 if (file.name === '..' && file.isDirectory) {
                   onOpen(file);
