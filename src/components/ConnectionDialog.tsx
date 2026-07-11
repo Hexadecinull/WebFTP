@@ -10,6 +10,7 @@ import { Switch } from '@/components/ui/switch';
 import { ConnectOptions, Protocol } from '@/types/ftp';
 import { useAuth } from '@/contexts/AuthContext';
 import { Lock, ChevronDown, Eye, EyeOff, Save } from 'lucide-react';
+import { toast } from '@/hooks/use-toast';
 
 interface ConnectionDialogProps {
   open: boolean;
@@ -477,9 +478,13 @@ export const ConnectionDialog = ({
                     type="button"
                     variant="ghost"
                     size="sm"
-                    onClick={toggleMore}
-                    disabled={!user}
-                    className={!user ? 'opacity-50' : ''}
+                    onClick={() => {
+                      if (!user) {
+                        toast({ title: 'Sign in required', description: 'Create an account or sign in to access advanced connection options.' });
+                        return;
+                      }
+                      toggleMore();
+                    }}
                   >
                     {!user && <Lock className="h-3 w-3 mr-1" />}
                     More

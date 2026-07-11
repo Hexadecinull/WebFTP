@@ -429,6 +429,182 @@ app.post('/api/exec', async (req, res) => {
   }
 });
 
+// ─── Archive ─────────────────────────────────────────────────────────────────
+
+import StreamZip from 'node-stream-zip';
+import archiver from 'archiver';
+
+const ARCHIVE_MAX_SIZE = 2 * 1024 * 1024 * 1024; // 2 GB uncompressed limit
+const ARCHIVE_MAX_RATIO = 100;                    // zip bomb: >100:1 ratio is rejected
+const ARCHIVE_EXTENSIONS = ['.zip', '.tar', '.tar.gz', '.tgz', '.gz'];
+
+function isArchive(filename) {
+  const lower = filename.toLowerCase();
+  return ARCHIVE_EXTENSIONS.some(ext => lower.endsWith(ext));
+}
+
+// List archive contents
+app.post('/api/archive/list', async (req, res) => {
+  const { sessionId, remotePath } = req.body;
+  try {
+    const session = getSession(sessionId);
+    const filename = remotePath.toLowerCase();
+
+    // Download archive to a temp buffer first
+    const chunks = [];
+    if (session.type === 'ftp') {
+      const { PassThrough } = await import('stream');
+      const pass = new PassThrough();
+      pass.on('data', c => chunks.push(c));
+      await new Promise((resolve, reject) => {
+        pass.on('end', resolve);
+        pass.on('error', reject);
+        session.client.downloadTo(pass, remotePath);
+      });
+    } else if (session.type === 'sftp' || session.type === 'scp') {
+      const stream = await session.client.createReadStream(remotePath);
+      await new Promise((resolve, reject) => {
+        stream.on('data', c => chunks.push(c));
+        stream.on('end', resolve);
+        stream.on('error', reject);
+      });
+    } else {
+      return res.status(400).json({ message: 'Archive listing not supported for this protocol' });
+    }
+
+    const buffer = Buffer.concat(chunks);
+
+    // ZIP handling
+    if (filename.endsWith('.zip')) {
+      const tmp = `/tmp/webftp_${Date.now()}.zip`;
+      await import('fs/promises').then(fs => fs.writeFile(tmp, buffer));
+
+      const zip = new StreamZip.async({ file: tmp });
+      const entries = await zip.entries();
+      await zip.close();
+      await import('fs/promises').then(fs => fs.unlink(tmp));
+
+      let totalUncompressed = 0;
+      const files = Object.values(entries).map(e => {
+        totalUncompressed += e.size;
+        return {
+          name: e.name,
+          size: e.size,
+          compressedSize: e.compressedSize,
+          isDirectory: e.isDirectory,
+        };
+      });
+
+      if (totalUncompressed > ARCHIVE_MAX_SIZE) {
+        return res.status(400).json({ message: `Archive uncompressed size exceeds 2 GB limit` });
+      }
+      const ratio = buffer.length > 0 ? totalUncompressed / buffer.length : 0;
+      if (ratio > ARCHIVE_MAX_RATIO) {
+        return res.status(400).json({ message: `Suspicious compression ratio (${ratio.toFixed(0)}:1) — possible zip bomb` });
+      }
+
+      return res.json({ entries: files });
+    }
+
+    res.status(400).json({ message: 'Only ZIP archives support content listing currently' });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+});
+
+// Extract a single file from a ZIP archive
+app.post('/api/archive/extract', async (req, res) => {
+  const { sessionId, remotePath, entryName } = req.body;
+  try {
+    const session = getSession(sessionId);
+
+    // Download archive
+    const chunks = [];
+    if (session.type === 'ftp') {
+      const { PassThrough } = await import('stream');
+      const pass = new PassThrough();
+      pass.on('data', c => chunks.push(c));
+      await new Promise((resolve, reject) => {
+        pass.on('end', resolve); pass.on('error', reject);
+        session.client.downloadTo(pass, remotePath);
+      });
+    } else if (session.type === 'sftp' || session.type === 'scp') {
+      const stream = await session.client.createReadStream(remotePath);
+      await new Promise((resolve, reject) => {
+        stream.on('data', c => chunks.push(c));
+        stream.on('end', resolve); stream.on('error', reject);
+      });
+    } else {
+      return res.status(400).json({ message: 'Protocol not supported for archive extraction' });
+    }
+
+    const buffer = Buffer.concat(chunks);
+    const tmp = `/tmp/webftp_${Date.now()}.zip`;
+    await import('fs/promises').then(fs => fs.writeFile(tmp, buffer));
+
+    const zip = new StreamZip.async({ file: tmp });
+    const entry = await zip.entry(entryName);
+    if (!entry) { await zip.close(); return res.status(404).json({ message: 'Entry not found in archive' }); }
+
+    if (entry.size > ARCHIVE_MAX_SIZE) {
+      await zip.close();
+      return res.status(400).json({ message: 'File exceeds 2 GB extraction limit' });
+    }
+
+    const fileBuffer = await zip.entryData(entryName);
+    await zip.close();
+    await import('fs/promises').then(fs => fs.unlink(tmp));
+
+    const basename = entryName.split('/').pop() || entryName;
+    res.setHeader('Content-Disposition', `attachment; filename="${basename}"`);
+    res.setHeader('Content-Type', 'application/octet-stream');
+    res.send(fileBuffer);
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+});
+
+// Create a ZIP archive of multiple remote files
+app.post('/api/archive/create', async (req, res) => {
+  const { sessionId, paths, archiveName = 'archive.zip' } = req.body;
+  if (!Array.isArray(paths) || paths.length === 0) {
+    return res.status(400).json({ message: 'No paths provided' });
+  }
+  try {
+    const session = getSession(sessionId);
+    res.setHeader('Content-Disposition', `attachment; filename="${archiveName}"`);
+    res.setHeader('Content-Type', 'application/zip');
+
+    const archive = archiver('zip', { zlib: { level: 6 } });
+    archive.pipe(res);
+
+    for (const remotePath of paths) {
+      const chunks = [];
+      if (session.type === 'ftp') {
+        const { PassThrough } = await import('stream');
+        const pass = new PassThrough();
+        pass.on('data', c => chunks.push(c));
+        await new Promise((resolve, reject) => {
+          pass.on('end', resolve); pass.on('error', reject);
+          session.client.downloadTo(pass, remotePath);
+        });
+      } else if (session.type === 'sftp' || session.type === 'scp') {
+        const stream = await session.client.createReadStream(remotePath);
+        await new Promise((resolve, reject) => {
+          stream.on('data', c => chunks.push(c));
+          stream.on('end', resolve); stream.on('error', reject);
+        });
+      }
+      const name = remotePath.split('/').pop() || 'file';
+      archive.append(Buffer.concat(chunks), { name });
+    }
+
+    await archive.finalize();
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+});
+
 // ─── Health ───────────────────────────────────────────────────────────────────
 
 app.get('/api/health', (_req, res) => {

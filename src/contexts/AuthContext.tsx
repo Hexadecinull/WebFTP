@@ -13,6 +13,11 @@ interface AuthContextType {
   signOut: () => Promise<void>;
   resetPassword: (email: string) => Promise<{ error: AuthError | null }>;
   updatePassword: (newPassword: string) => Promise<{ error: AuthError | null }>;
+  signInWithGoogle: () => Promise<void>;
+  signInWithGitHub: () => Promise<void>;
+  changeEmail: (newEmail: string) => Promise<{ error: AuthError | null }>;
+  changePassword: (currentPassword: string, newPassword: string) => Promise<{ error: AuthError | null }>;
+  deleteAccount: () => Promise<void>;
   updateProfile: (username?: string, avatarFile?: File) => Promise<void>;
   uploadAvatar: (file: File) => Promise<string | null>;
   refreshProfile: () => Promise<void>;
@@ -174,6 +179,57 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   };
 
+  const signInWithGoogle = async () => {
+    await supabase.auth.signInWithOAuth({
+      provider: 'google',
+      options: { redirectTo: `${window.location.origin}/` },
+    });
+  };
+
+  const signInWithGitHub = async () => {
+    await supabase.auth.signInWithOAuth({
+      provider: 'github',
+      options: { redirectTo: `${window.location.origin}/` },
+    });
+  };
+
+  const changeEmail = async (newEmail: string) => {
+    const { error } = await supabase.auth.updateUser(
+      { email: newEmail },
+      { emailRedirectTo: `${window.location.origin}/` }
+    );
+    if (!error) {
+      toast({ title: 'Verification sent', description: 'Check both your old and new email to confirm the change.' });
+    }
+    return { error };
+  };
+
+  const changePassword = async (currentPassword: string, newPassword: string) => {
+    // Re-authenticate first by signing in again
+    if (!user?.email) return { error: { message: 'No user email found' } as AuthError };
+    const { error: reAuthError } = await supabase.auth.signInWithPassword({
+      email: user.email,
+      password: currentPassword,
+    });
+    if (reAuthError) return { error: reAuthError };
+    const { error } = await supabase.auth.updateUser({ password: newPassword });
+    if (!error) toast({ title: 'Password changed', description: 'Your password has been updated.' });
+    return { error };
+  };
+
+  const deleteAccount = async () => {
+    if (!user) return;
+    try {
+      await supabase.from('profiles').delete().eq('id', user.id);
+      await supabase.auth.admin.deleteUser(user.id).catch(() => {});
+      await supabase.auth.signOut();
+      setProfile(null);
+      toast({ title: 'Account deleted', description: 'Your account has been permanently deleted.' });
+    } catch {
+      toast({ title: 'Error', description: 'Failed to delete account. Please contact support.', variant: 'destructive' });
+    }
+  };
+
   const refreshProfile = async () => {
     if (user) await fetchProfile(user.id);
   };
@@ -182,6 +238,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     <AuthContext.Provider value={{
       user, session, profile, isPasswordRecovery,
       signUp, signIn, signOut, resetPassword, updatePassword,
+      signInWithGoogle, signInWithGitHub,
+      changeEmail, changePassword, deleteAccount,
       updateProfile, uploadAvatar, refreshProfile,
     }}>
       {children}

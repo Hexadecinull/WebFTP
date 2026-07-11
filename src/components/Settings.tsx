@@ -395,7 +395,15 @@ export const Settings = ({ onClose }: SettingsProps) => {
               <TabsTrigger value="appearance" className="transition-all data-[state=active]:bg-background">Appearance</TabsTrigger>
               <TabsTrigger value="connection" className="transition-all data-[state=active]:bg-background">Connection</TabsTrigger>
               <TabsTrigger value="advanced" className="transition-all data-[state=active]:bg-background">Advanced</TabsTrigger>
-              <TabsTrigger value="professional" disabled={!user} className="transition-all data-[state=active]:bg-background">
+              <TabsTrigger
+                value="professional"
+                className="transition-all data-[state=active]:bg-background"
+                onClick={() => {
+                  if (!user) {
+                    toast({ title: 'Sign in required', description: 'Create an account or sign in to access Professional features.' });
+                  }
+                }}
+              >
                 <div className="flex items-center gap-1">
                   Professional
                   {!user && <Lock className="h-3 w-3" />}
