@@ -431,8 +431,10 @@ app.post('/api/exec', async (req, res) => {
 
 // ─── Archive ─────────────────────────────────────────────────────────────────
 
+import { createRequire } from 'module';
+const _require = createRequire(import.meta.url);
+const archiver = _require('archiver');
 import StreamZip from 'node-stream-zip';
-import archiver from 'archiver';
 
 const ARCHIVE_MAX_SIZE = 2 * 1024 * 1024 * 1024; // 2 GB uncompressed limit
 const ARCHIVE_MAX_RATIO = 100;                    // zip bomb: >100:1 ratio is rejected
