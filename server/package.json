@@ -9,7 +9,7 @@
     "dev": "node --watch index.js"
   },
   "dependencies": {
-    "archiver": "^7.0.1",
+    "archiver": "^8.0.0",
     "basic-ftp": "^5.0.5",
     "cors": "^2.8.5",
     "dotenv": "^16.4.5",

@@ -62,7 +62,7 @@ jobs:
       - name: Install server dependencies
         run: |
           cd /var/www/webftp/server
-          npm ci --omit=dev
+          npm install --omit=dev --no-audit --no-fund
 
       - name: Restart proxy server
         run: |
