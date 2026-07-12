@@ -55,6 +55,8 @@ jobs:
       - name: Update server code
         run: |
           cd /var/www/webftp
+          git fetch origin
+          git checkout -- .
           git pull --ff-only
 
       - name: Install server dependencies
