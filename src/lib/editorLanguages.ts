@@ -23,17 +23,17 @@ import { lua } from '@codemirror/legacy-modes/mode/lua';
 import { r } from '@codemirror/legacy-modes/mode/r';
 import { perl } from '@codemirror/legacy-modes/mode/perl';
 import { diff } from '@codemirror/legacy-modes/mode/diff';
-import { dockerfile } from '@codemirror/legacy-modes/mode/dockerfile';
+import { dockerFile } from '@codemirror/legacy-modes/mode/dockerfile';
 import { nginx } from '@codemirror/legacy-modes/mode/nginx';
 import { kotlin, dart, scala } from '@codemirror/legacy-modes/mode/clike';
-import { powershell } from '@codemirror/legacy-modes/mode/powershell';
+import { powerShell } from '@codemirror/legacy-modes/mode/powershell';
 
 export function getLanguageExtension(filename: string) {
   const base = filename.split('/').pop() || filename;
   const ext = base.includes('.') ? base.split('.').pop()?.toLowerCase() || '' : '';
 
   // Special filenames
-  if (base === 'Dockerfile' || base.startsWith('Dockerfile.')) return StreamLanguage.define(dockerfile);
+  if (base === 'Dockerfile' || base.startsWith('Dockerfile.')) return StreamLanguage.define(dockerFile);
   if (base === 'nginx.conf' || base.endsWith('.nginx')) return StreamLanguage.define(nginx);
   if (base === 'Makefile' || base === 'CMakeLists.txt') return null;
 
@@ -109,7 +109,7 @@ export function getLanguageExtension(filename: string) {
     case 'sh': case 'bash': case 'zsh': case 'fish': case 'ksh':
       return StreamLanguage.define(shell);
     case 'ps1': case 'psm1': case 'psd1':
-      return StreamLanguage.define(powershell);
+      return StreamLanguage.define(powerShell);
 
     // R
     case 'r': case 'rmd':
