@@ -21,6 +21,7 @@ interface FileListProps {
   onCut?: (file: FtpEntry) => void;
   onPaste?: () => void;
   onSelectAll?: () => void;
+  allSelected?: boolean;
   selectedFiles: FtpEntry[];
   hasClipboard?: boolean;
   onDragStart?: (e: React.DragEvent, file: FtpEntry) => void;
@@ -30,12 +31,12 @@ interface FileListProps {
 export const FileList = ({
   files, onFileClick, onFileDoubleClick, onDownload, onDelete, onEdit,
   onOpen, onProperties, onRename, onDownloadFolder, onBookmark,
-  onCopy, onCut, onPaste, onSelectAll, selectedFiles, hasClipboard,
+  onCopy, onCut, onPaste, onSelectAll, allSelected, selectedFiles, hasClipboard,
   onDragStart, onDropOnFolder,
 }: FileListProps) => {
   return (
     <ScrollArea className="h-full">
-      <div className="divide-y divide-border">
+      <div className="divide-y divide-border px-2 py-1">
         {files.map((file) => (
           <FileContextMenu
             key={file.path}
@@ -52,6 +53,7 @@ export const FileList = ({
             onCut={onCut}
             onPaste={onPaste}
             onSelectAll={onSelectAll}
+            allSelected={allSelected}
             hasClipboard={hasClipboard}
             canEdit={!file.isDirectory && isEditableFile(file.name)}
           >
@@ -106,7 +108,9 @@ export const FileList = ({
               </div>
 
               <div className="flex-shrink-0 text-right text-sm text-muted-foreground">
-                {file.size !== undefined && (
+                {file.isDirectory ? (
+                  <p className="font-mono text-muted-foreground/50">--</p>
+                ) : file.size !== undefined && (
                   <p className="font-mono">{formatBytes(file.size)}</p>
                 )}
                 {file.modifiedAt && (

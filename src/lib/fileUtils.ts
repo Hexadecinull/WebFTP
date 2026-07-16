@@ -46,3 +46,28 @@ export function isEditableFile(filename: string): boolean {
   const ext = getFileExtension(filename);
   return editableExtensions.includes(ext) || !ext.match(/^(exe|dll|so|dylib|bin|dat|pdf|doc|docx|xls|xlsx|ppt|pptx|zip|tar|gz|rar|7z|png|jpg|jpeg|gif|bmp|ico|svg|mp3|mp4|avi|mov|wmv|flv|mkv|webm|ogg|wav|flac)$/i);
 }
+
+const ARCHIVE_EXTENSIONS = ['zip', 'tar', 'gz', 'tgz', 'rar', '7z', 'bz2', 'xz'];
+const IMAGE_EXTENSIONS = ['png', 'jpg', 'jpeg', 'svg', 'webp', 'gif', 'ico', 'bmp'];
+const VIDEO_EXTENSIONS = ['mp4', 'mkv', 'webm', 'mov', 'avi', 'm4v'];
+const AUDIO_EXTENSIONS = ['mp3', 'ogg', 'wav', 'm4a', 'opus', 'flac', 'aac'];
+
+export function isArchiveFile(filename: string): boolean {
+  return ARCHIVE_EXTENSIONS.includes(getFileExtension(filename));
+}
+
+export function isImageFile(filename: string): boolean {
+  return IMAGE_EXTENSIONS.includes(getFileExtension(filename));
+}
+
+export function isVideoFile(filename: string): boolean {
+  return VIDEO_EXTENSIONS.includes(getFileExtension(filename));
+}
+
+export function isAudioFile(filename: string): boolean {
+  return AUDIO_EXTENSIONS.includes(getFileExtension(filename));
+}
+
+export function isMediaFile(filename: string): boolean {
+  return isImageFile(filename) || isVideoFile(filename) || isAudioFile(filename);
+}

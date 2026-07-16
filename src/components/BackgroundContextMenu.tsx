@@ -13,13 +13,14 @@ interface BackgroundContextMenuProps {
   onUpload: () => void;
   onRefresh: () => void;
   onSelectAll?: () => void;
+  allSelected?: boolean;
   onPaste?: () => void;
   hasClipboard?: boolean;
 }
 
 export const BackgroundContextMenu = ({
   children, onCreateFile, onCreateFolder, onUpload, onRefresh,
-  onSelectAll, onPaste, hasClipboard,
+  onSelectAll, allSelected, onPaste, hasClipboard,
 }: BackgroundContextMenuProps) => {
   return (
     <ContextMenu>
@@ -48,7 +49,7 @@ export const BackgroundContextMenu = ({
         {onSelectAll && (
           <ContextMenuItem onClick={onSelectAll} className="gap-2">
             <CheckSquare className="h-4 w-4" />
-            <span>Select All</span>
+            <span>{allSelected ? 'Deselect All' : 'Select All'}</span>
           </ContextMenuItem>
         )}
         <ContextMenuItem onClick={onRefresh} className="gap-2">

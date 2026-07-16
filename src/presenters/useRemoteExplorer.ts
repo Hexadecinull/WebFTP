@@ -134,10 +134,12 @@ export const useRemoteExplorer = (
     }
   }, [session, ftpRepository]);
 
-  // Load root directory when session changes
+  // Load directory when session changes — resumes at the last visited path
+  // for this host/protocol if one was saved, otherwise starts at root.
   useEffect(() => {
     if (session) {
-      loadDirectory('/');
+      const lastPath = localStorage.getItem(`lastPath_${session.host}_${session.protocol}`);
+      loadDirectory(lastPath || '/');
     } else {
       setFiles([]);
       setCurrentPath('/');

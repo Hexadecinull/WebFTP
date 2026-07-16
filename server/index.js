@@ -59,6 +59,23 @@ function makeSessionId() {
   return Math.random().toString(36).slice(2) + Date.now().toString(36);
 }
 
+// basic-ftp's UnixPermissions.{user,group,world} are numeric bitmasks
+// (Read=4, Write=2, Execute=1), not objects — convert to a standard "rwx" string.
+function unixModeToString(perm) {
+  const bits = (n) => `${n & 4 ? 'r' : '-'}${n & 2 ? 'w' : '-'}${n & 1 ? 'x' : '-'}`;
+  return `${bits(perm.user)}${bits(perm.group)}${bits(perm.world)}`;
+}
+
+// Convert a raw POSIX mode integer (from SFTP/SSH stat attrs) into "rwxr-xr--"
+function posixModeToString(mode) {
+  const perms = mode & 0o777;
+  const bits = (shift) => {
+    const n = (perms >> shift) & 0o7;
+    return `${n & 4 ? 'r' : '-'}${n & 2 ? 'w' : '-'}${n & 1 ? 'x' : '-'}`;
+  };
+  return `${bits(6)}${bits(3)}${bits(0)}`;
+}
+
 // ─── Connect ────────────────────────────────────────────────────────────────
 
 app.post('/api/connect', async (req, res) => {
@@ -67,7 +84,10 @@ app.post('/api/connect', async (req, res) => {
 
   try {
     if (opts.protocol === 'ftp' || opts.protocol === 'ftps') {
-      const client = new FtpClient();
+      // basic-ftp's Client constructor takes the IDLE timeout (defaults to 30s!)
+      // — this is what was causing "FIN packet unexpectedly" disconnects.
+      const idleTimeoutMs = (opts.timeout ?? 300) * 1000;
+      const client = new FtpClient(idleTimeoutMs);
       client.ftp.verbose = opts.enableLogging ?? false;
       await client.access({
         host: opts.host,
@@ -76,10 +96,17 @@ app.post('/api/connect', async (req, res) => {
         password: opts.password,
         secure: opts.protocol === 'ftps',
         secureOptions: opts.ftpSecurityMode === 'implicit' ? { rejectUnauthorized: false } : undefined,
-        timeout: (opts.timeout ?? 30) * 1000,
       });
       if (opts.ftpPassive === false) client.ftp.passive = false;
-      sessions.set(sessionId, { type: 'ftp', client, opts });
+
+      // Active keepalive: send NOOP periodically so the REMOTE server doesn't
+      // time us out either (this is what FileZilla does under the hood).
+      const keepAliveMs = Math.min(idleTimeoutMs * 0.8, 4 * 60 * 1000);
+      const keepAliveHandle = setInterval(() => {
+        client.send('NOOP').catch(() => {});
+      }, keepAliveMs);
+
+      sessions.set(sessionId, { type: 'ftp', client, opts, keepAliveHandle });
       return res.json({ sessionId, currentPath: '/' });
     }
 
@@ -89,8 +116,9 @@ app.post('/api/connect', async (req, res) => {
         host: opts.host,
         port: opts.port ?? 22,
         username: opts.username,
-        readyTimeout: (opts.timeout ?? 30) * 1000,
-        keepaliveInterval: (opts.keepAlive ?? 60) * 1000,
+        readyTimeout: (opts.timeout ?? 300) * 1000,
+        keepaliveInterval: 10000,
+        keepaliveCountMax: 30,
         ...(opts.sshKey
           ? { privateKey: opts.sshKey, passphrase: opts.sshKeyPassphrase }
           : { password: opts.password }),
@@ -144,68 +172,105 @@ app.post('/api/connect', async (req, res) => {
 
 // ─── List ────────────────────────────────────────────────────────────────────
 
+// Reusable directory listing logic — used by both /api/list and /api/search
+async function listDirectory(session, path) {
+  if (session.type === 'ftp') {
+    const list = await session.client.list(path || '/');
+    return list.map(f => ({
+      name: f.name,
+      path: `${path}/${f.name}`.replace('//', '/'),
+      isDirectory: f.isDirectory,
+      size: f.size,
+      modifiedAt: f.modifiedAt?.toISOString(),
+      permissions: f.permissions ? unixModeToString(f.permissions) : undefined,
+    }));
+  }
+
+  if (session.type === 'sftp' || session.type === 'scp') {
+    const list = await session.client.list(path || '/');
+    return list.map(f => ({
+      name: f.name,
+      path: `${path}/${f.name}`.replace('//', '/'),
+      isDirectory: f.type === 'd',
+      size: f.size,
+      modifiedAt: new Date(f.modifyTime).toISOString(),
+      permissions: f.rights ? `${f.rights.user}${f.rights.group}${f.rights.other}` : undefined,
+    }));
+  }
+
+  if (session.type === 'webdav') {
+    const list = await session.client.getDirectoryContents(path || '/');
+    return Array.isArray(list) ? list.map(f => ({
+      name: f.basename,
+      path: f.filename,
+      isDirectory: f.type === 'directory',
+      size: f.size,
+      modifiedAt: f.lastmod,
+    })) : [];
+  }
+
+  if (session.type === 'ssh') {
+    const sftp = await new Promise((resolve, reject) => {
+      session.client.sftp((err, s) => err ? reject(err) : resolve(s));
+    });
+    const list = await new Promise((resolve, reject) => {
+      sftp.readdir(path || '/', (err, l) => err ? reject(err) : resolve(l));
+    });
+    return list.map(f => ({
+      name: f.filename,
+      path: `${path}/${f.filename}`.replace('//', '/'),
+      isDirectory: (f.attrs.mode & 0o040000) !== 0,
+      size: f.attrs.size,
+      modifiedAt: new Date(f.attrs.mtime * 1000).toISOString(),
+      permissions: posixModeToString(f.attrs.mode),
+    }));
+  }
+
+  return [];
+}
+
 app.post('/api/list', async (req, res) => {
   const { sessionId, path } = req.body;
   try {
     const session = getSession(sessionId);
+    const entries = await listDirectory(session, path);
+    res.json({ entries });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+});
 
-    if (session.type === 'ftp') {
-      const list = await session.client.list(path || '/');
-      const entries = list.map(f => ({
-        name: f.name,
-        path: `${path}/${f.name}`.replace('//', '/'),
-        isDirectory: f.isDirectory,
-        size: f.size,
-        modifiedAt: f.modifiedAt?.toISOString(),
-        permissions: f.permissions ? `${f.permissions.user.read ? 'r' : '-'}${f.permissions.user.write ? 'w' : '-'}${f.permissions.user.execute ? 'x' : '-'}` : undefined,
-      }));
-      return res.json({ entries });
+// ─── Search (recursive) ──────────────────────────────────────────────────────
+
+app.post('/api/search', async (req, res) => {
+  const { sessionId, path, query, maxDepth = 8, maxResults = 500 } = req.body;
+  try {
+    const session = getSession(sessionId);
+    const q = String(query || '').toLowerCase();
+    const results = [];
+
+    async function walk(dir, depth) {
+      if (results.length >= maxResults || depth > maxDepth) return;
+      let entries;
+      try {
+        entries = await listDirectory(session, dir);
+      } catch {
+        return; // permission denied or unreadable — skip silently
+      }
+      for (const entry of entries) {
+        if (results.length >= maxResults) return;
+        if (entry.name === '..' || entry.name === '.') continue;
+        if (entry.name.toLowerCase().includes(q)) {
+          results.push(entry);
+        }
+        if (entry.isDirectory) {
+          await walk(entry.path, depth + 1);
+        }
+      }
     }
 
-    if (session.type === 'sftp' || session.type === 'scp') {
-      const list = await session.client.list(path || '/');
-      const entries = list.map(f => ({
-        name: f.name,
-        path: `${path}/${f.name}`.replace('//', '/'),
-        isDirectory: f.type === 'd',
-        size: f.size,
-        modifiedAt: new Date(f.modifyTime).toISOString(),
-        permissions: f.rights ? `${f.rights.user}${f.rights.group}${f.rights.other}` : undefined,
-      }));
-      return res.json({ entries });
-    }
-
-    if (session.type === 'webdav') {
-      const list = await session.client.getDirectoryContents(path || '/');
-      const entries = Array.isArray(list) ? list.map(f => ({
-        name: f.basename,
-        path: f.filename,
-        isDirectory: f.type === 'directory',
-        size: f.size,
-        modifiedAt: f.lastmod,
-      })) : [];
-      return res.json({ entries });
-    }
-
-    if (session.type === 'ssh') {
-      // SSH: use sftp subsystem for directory listing
-      const sftp = await new Promise((resolve, reject) => {
-        session.client.sftp((err, s) => err ? reject(err) : resolve(s));
-      });
-      const list = await new Promise((resolve, reject) => {
-        sftp.readdir(path || '/', (err, l) => err ? reject(err) : resolve(l));
-      });
-      const entries = list.map(f => ({
-        name: f.filename,
-        path: `${path}/${f.filename}`.replace('//', '/'),
-        isDirectory: (f.attrs.mode & 0o040000) !== 0,
-        size: f.attrs.size,
-        modifiedAt: new Date(f.attrs.mtime * 1000).toISOString(),
-      }));
-      return res.json({ entries });
-    }
-
-    res.status(400).json({ message: 'Unknown session type' });
+    await walk(path || '/', 0);
+    res.json({ entries: results, truncated: results.length >= maxResults });
   } catch (err) {
     res.status(500).json({ message: err.message });
   }
@@ -393,6 +458,7 @@ app.post('/api/disconnect', async (req, res) => {
   try {
     const session = sessions.get(sessionId);
     if (session) {
+      if (session.keepAliveHandle) clearInterval(session.keepAliveHandle);
       if (session.type === 'ftp') session.client.close();
       else if (session.type === 'sftp' || session.type === 'scp') await session.client.end();
       else if (session.type === 'ssh') session.client.end();

@@ -106,12 +106,24 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const signUp = async (email: string, password: string) => {
-    const { error } = await supabase.auth.signUp({
+    const { data, error } = await supabase.auth.signUp({
       email,
       password,
       options: { emailRedirectTo: `${window.location.origin}/` },
     });
-    return { error };
+    if (error) return { error };
+    // Supabase (with email confirmations enabled) does NOT return an error for
+    // an already-registered+confirmed email — it returns "success" with an
+    // empty identities array instead, to prevent user enumeration attacks.
+    if (data.user && Array.isArray(data.user.identities) && data.user.identities.length === 0) {
+      return {
+        error: {
+          name: 'AuthApiError',
+          message: 'An account with this email already exists. Please sign in instead.',
+        } as AuthError,
+      };
+    }
+    return { error: null };
   };
 
   const signIn = async (email: string, password: string) => {

@@ -61,7 +61,7 @@ export const FileProperties = ({
               </span>
             </div>
             
-            {file.size !== undefined && (
+            {!file.isDirectory && file.size !== undefined && (
               <div className="flex justify-between py-2 border-b border-border animate-fade-in" style={{ animationDelay: '150ms' }}>
                 <span className="text-muted-foreground">Size:</span>
                 <span className="font-medium font-mono">

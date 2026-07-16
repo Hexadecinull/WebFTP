@@ -14,6 +14,7 @@ export type ProgressCallback = (loaded: number, total?: number) => void;
 export interface FtpRepository {
   connect(options: ConnectOptions): Promise<Session>;
   list(session: Session, path: string): Promise<FtpEntry[]>;
+  search?(session: Session, path: string, query: string): Promise<FtpEntry[]>;
   download(session: Session, remotePath: string, onProgress?: ProgressCallback): Promise<Blob>;
   upload(session: Session, remotePath: string, file: File, onProgress?: ProgressCallback): Promise<void>;
   rename(session: Session, oldPath: string, newPath: string): Promise<void>;
@@ -1283,6 +1284,39 @@ export class FtpRepositoryImpl implements FtpRepository {
     });
 
     return entries;
+  }
+
+  async search(session: Session, path: string, query: string): Promise<FtpEntry[]> {
+    await new Promise(resolve => setTimeout(resolve, 200));
+    const q = query.toLowerCase();
+    const results: FtpEntry[] = [];
+    const maxResults = 500;
+
+    const walk = (dirPath: string, depth: number) => {
+      if (results.length >= maxResults || depth > 12) return;
+      const root = this.getFS(session);
+      const node = resolveNode(root, dirPath);
+      if (!node || !node.isDirectory || !node.children) return;
+
+      for (const [name, child] of node.children) {
+        if (results.length >= maxResults) return;
+        const childPath = normalizePath(`${dirPath}/${name}`);
+        if (name.toLowerCase().includes(q)) {
+          results.push({
+            name,
+            path: childPath,
+            isDirectory: child.isDirectory,
+            size: child.isDirectory ? undefined : child.size,
+            modifiedAt: child.modifiedAt,
+            permissions: child.permissions,
+          });
+        }
+        if (child.isDirectory) walk(childPath, depth + 1);
+      }
+    };
+
+    walk(normalizePath(path), 0);
+    return results;
   }
 
   async download(session: Session, remotePath: string, onProgress?: ProgressCallback): Promise<Blob> {

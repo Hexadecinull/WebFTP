@@ -56,6 +56,13 @@ export class FtpRepositoryRemoteImpl implements FtpRepository {
     return data.entries;
   }
 
+  async search(session: Session, path: string, query: string): Promise<FtpEntry[]> {
+    const data = await this.request<{ entries: FtpEntry[]; truncated: boolean }>(
+      'POST', '/api/search', { sessionId: session.id, path, query }
+    );
+    return data.entries;
+  }
+
   async download(
     session: Session,
     remotePath: string,

@@ -457,10 +457,10 @@ export const ConnectionDialog = ({
                 <SelectTrigger id="protocol"><SelectValue /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="ftp">FTP / FTPS</SelectItem>
-                  <SelectItem value="sftp">SFTP — SSH File Transfer</SelectItem>
-                  <SelectItem value="scp">SCP — Secure Copy</SelectItem>
-                  <SelectItem value="ssh">SSH — Secure Shell</SelectItem>
-                  <SelectItem value="smb">SMB — Windows Share</SelectItem>
+                  <SelectItem value="sftp">SFTP (SSH File Transfer)</SelectItem>
+                  <SelectItem value="scp">SCP (Secure Copy)</SelectItem>
+                  <SelectItem value="ssh">SSH (Secure Shell)</SelectItem>
+                  <SelectItem value="smb">SMB (Windows Share)</SelectItem>
                   <SelectItem value="webdav">WebDAV</SelectItem>
                   <SelectItem value="local">Local Network</SelectItem>
                 </SelectContent>

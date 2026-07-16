@@ -22,6 +22,10 @@ import { UploadDialog } from '@/components/UploadDialog';
 import { RenameFolderDialog } from '@/components/RenameFolderDialog';
 import { DownloadFolderDialog } from '@/components/DownloadFolderDialog';
 import { KeyboardShortcuts } from '@/components/KeyboardShortcuts';
+import { DeleteConfirmDialog } from '@/components/DeleteConfirmDialog';
+import { MobileWarningDialog } from '@/components/MobileWarningDialog';
+import { ArchiveBrowserDialog } from '@/components/ArchiveBrowserDialog';
+import { MediaViewerDialog } from '@/components/MediaViewerDialog';
 import { StatusBar } from '@/components/StatusBar';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -29,7 +33,7 @@ import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 import { RefreshCw, Upload, FolderPlus, FilePlus, Trash2, Settings as SettingsIcon, List, LayoutGrid, MoreHorizontal, Search, X, Keyboard } from 'lucide-react';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { FtpEntry, ConnectOptions } from '@/types/ftp';
-import { isEditableFile } from '@/lib/fileUtils';
+import { isEditableFile, isArchiveFile, isMediaFile, isImageFile } from '@/lib/fileUtils';
 import logo from '@/assets/logo.png';
 import { UserMenu } from '@/components/UserMenu';
 import Auth from '@/pages/Auth';
@@ -122,6 +126,14 @@ const Index = () => {
   const [viewMode, setViewMode] = useState<'list' | 'grid'>('list');
   const [showTransferQueue, setShowTransferQueue] = useState(!isMobile);
   const [keyboardShortcutsOpen, setKeyboardShortcutsOpen] = useState(false);
+  const [deleteConfirm, setDeleteConfirm] = useState<{ files: FtpEntry[] } | null>(null);
+  const [mobileWarningOpen, setMobileWarningOpen] = useState(false);
+
+  useEffect(() => {
+    if (isMobile && !sessionStorage.getItem('mobileWarningDismissed')) {
+      setMobileWarningOpen(true);
+    }
+  }, [isMobile]);
   const [searchQuery, setSearchQuery] = useState('');
   const [searchActive, setSearchActive] = useState(false);
   const searchInputRef = useRef<HTMLInputElement>(null);
@@ -182,6 +194,8 @@ const Index = () => {
     });
     setNavIndex(prev => prev + 1);
     setSelectedFiles([]);
+    // Persist last visited path so reconnecting to this host resumes here
+    localStorage.setItem(`lastPath_${session.host}_${session.protocol}`, currentPath);
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentPath]);
 
@@ -209,6 +223,12 @@ const Index = () => {
     localStorage.setItem(storageKey, JSON.stringify(updated));
   }, [session, user]);
 
+  const handleDeleteClick = useCallback(() => {
+    const toDelete = selectedFiles.filter(f => f.name !== '..');
+    if (toDelete.length === 0) return;
+    setDeleteConfirm({ files: toDelete });
+  }, [selectedFiles]);
+
   // Keyboard shortcuts
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -219,7 +239,7 @@ const Index = () => {
       if (e.key === 'F1' || (e.key === '?' && !inInput)) { e.preventDefault(); setKeyboardShortcutsOpen(true); }
       if (e.key === 'F5') { e.preventDefault(); refresh(); }
       if (e.key === 'F2' && selectedFiles.length === 1) { e.preventDefault(); setRenameFolderFile(selectedFiles[0]); }
-      if (e.key === 'Delete' && selectedFiles.length > 0 && !inInput) { e.preventDefault(); selectedFiles.forEach(f => deleteFile(f.path)); setSelectedFiles([]); }
+      if (e.key === 'Delete' && selectedFiles.length > 0 && !inInput) { e.preventDefault(); handleDeleteClick(); }
       if (e.key === 'Backspace' && !inInput) { e.preventDefault(); navigateToPath(currentPath.split('/').slice(0, -1).join('/') || '/'); }
       if (e.altKey && e.key === 'ArrowLeft') { e.preventDefault(); handleGoBack(); }
       if (e.altKey && e.key === 'ArrowRight') { e.preventDefault(); handleGoForward(); }
@@ -236,7 +256,7 @@ const Index = () => {
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [session, selectedFiles, clipboard, searchActive, files, currentPath, refresh, deleteFile, navigateToPath, handleGoBack, handleGoForward, startDownload]);
+  }, [session, selectedFiles, clipboard, searchActive, files, currentPath, refresh, deleteFile, navigateToPath, handleGoBack, handleGoForward, startDownload, handleDeleteClick]);
 
   // View event handlers
   const handleConnect = useCallback(async (options: ConnectOptions) => {
@@ -260,11 +280,52 @@ const Index = () => {
     }
   }, []);
 
+  const [archiveViewer, setArchiveViewer] = useState<{ path: string; name: string } | null>(null);
+  const [mediaViewer, setMediaViewer] = useState<{ path: string; name: string } | null>(null);
+  const [mediaBlob, setMediaBlob] = useState<Blob | null>(null);
+  const [mediaLoading, setMediaLoading] = useState(false);
+
   const handleFileDoubleClick = useCallback(async (file: FtpEntry) => {
     if (file.isDirectory) {
       navigateToPath(file.path);
       setSelectedFiles([]);
-    } else if (isEditableFile(file.name)) {
+      return;
+    }
+
+    if (isArchiveFile(file.name)) {
+      const ext = file.name.split('.').pop()?.toLowerCase();
+      if (ext !== 'zip') {
+        toast({
+          title: 'Preview not available',
+          description: `Browsing ${ext?.toUpperCase()} contents isn't supported yet — only ZIP archives can be browsed. You can still download it normally.`,
+        });
+        return;
+      }
+      if (!settings.proxyUrl.trim()) {
+        toast({ title: 'Proxy required', description: 'Archive browsing requires a configured proxy server (Settings → Connection).', variant: 'destructive' });
+        return;
+      }
+      setArchiveViewer({ path: file.path, name: file.name });
+      return;
+    }
+
+    if (isMediaFile(file.name)) {
+      setMediaViewer({ path: file.path, name: file.name });
+      setMediaBlob(null);
+      setMediaLoading(true);
+      try {
+        const blob = await ftpRepository.download(session!, file.path);
+        setMediaBlob(blob);
+      } catch (error) {
+        toast({ title: 'Failed to load preview', description: error instanceof Error ? error.message : 'Unknown error', variant: 'destructive' });
+        setMediaViewer(null);
+      } finally {
+        setMediaLoading(false);
+      }
+      return;
+    }
+
+    if (isEditableFile(file.name)) {
       try {
         const content = await readFile(file.path);
         setEditingFile({ path: file.path, name: file.name, content });
@@ -272,7 +333,7 @@ const Index = () => {
         console.error('Failed to read file:', error);
       }
     }
-  }, [navigateToPath, readFile]);
+  }, [navigateToPath, readFile, settings.proxyUrl, ftpRepository, session]);
 
   const handlePaste = useCallback(async () => {
     if (!clipboard) return;
@@ -294,11 +355,11 @@ const Index = () => {
   }, [clipboard, currentPath, renameFile, readFile, writeFile, refresh]);
 
   const handleUploadFiles = useCallback((files: File[]) => {
-    files.forEach(file => {
-      const remotePath = `${currentPath}/${file.name}`.replace('//', '/');
-      startUpload(file, remotePath);
+    const remotePath = (file: File) => `${currentPath}/${file.name}`.replace('//', '/');
+    Promise.all(files.map(file => startUpload(file, remotePath(file)))).finally(() => {
+      refresh();
     });
-  }, [currentPath, startUpload]);
+  }, [currentPath, startUpload, refresh]);
 
   const handleDrop = useCallback((e: React.DragEvent) => {
     e.preventDefault();
@@ -309,21 +370,13 @@ const Index = () => {
     
     const files = e.dataTransfer.files;
     if (files && session) {
-      Array.from(files).forEach(file => {
+      const fileArray = Array.from(files);
+      Promise.all(fileArray.map(file => {
         const remotePath = `${currentPath}/${file.name}`.replace('//', '/');
-        startUpload(file, remotePath);
-      });
+        return startUpload(file, remotePath);
+      })).finally(() => refresh());
     }
-  }, [currentPath, startUpload, session, draggedFile]);
-
-  const handleDeleteClick = useCallback(() => {
-    const toDelete = selectedFiles.filter(f => f.name !== '..');
-    if (toDelete.length === 0) return;
-    if (confirm(`Delete ${toDelete.length === 1 ? toDelete[0].name : `${toDelete.length} items`}?`)) {
-      toDelete.forEach(f => deleteFile(f.path));
-      setSelectedFiles([]);
-    }
-  }, [selectedFiles, deleteFile]);
+  }, [currentPath, startUpload, session, draggedFile, refresh]);
 
   const handleCreateFolder = useCallback((name: string) => {
     createFolder(name);
@@ -415,20 +468,49 @@ const Index = () => {
     toast({ title: 'Bookmarked', description: `${file.name} added to bookmarks` });
   }, [session, user]);
 
+  // Recursive search — searches the current directory AND all subdirectories,
+  // not just the files already loaded in view. Debounced to avoid spamming
+  // the server while typing.
+  const [searchResults, setSearchResults] = useState<FtpEntry[] | null>(null);
+  const [isSearching, setIsSearching] = useState(false);
+
+  useEffect(() => {
+    if (!searchActive || !searchQuery.trim() || !session) {
+      setSearchResults(null);
+      return;
+    }
+    setIsSearching(true);
+    const timeoutId = setTimeout(async () => {
+      try {
+        if (ftpRepository.search) {
+          const results = await ftpRepository.search(session, currentPath, searchQuery.trim());
+          setSearchResults(results);
+        } else {
+          // Fallback: filter only the current directory if search isn't supported
+          const q = searchQuery.toLowerCase();
+          setSearchResults(files.filter(f => f.name.toLowerCase().includes(q)));
+        }
+      } catch {
+        toast({ title: 'Search failed', description: 'Could not complete the search', variant: 'destructive' });
+        setSearchResults([]);
+      } finally {
+        setIsSearching(false);
+      }
+    }, 400);
+    return () => clearTimeout(timeoutId);
+  }, [searchQuery, searchActive, session, currentPath, ftpRepository, files]);
+
   const displayedFiles = useMemo(() => {
-    if (!searchQuery.trim()) return files;
-    const q = searchQuery.toLowerCase();
-    return files.filter(f => f.name.toLowerCase().includes(q));
-  }, [files, searchQuery]);
+    if (!searchActive || !searchQuery.trim()) return files;
+    return searchResults ?? [];
+  }, [files, searchQuery, searchActive, searchResults]);
 
   const commonFileProps = {
     files: displayedFiles,
     onFileClick: handleFileClick,
     onFileDoubleClick: handleFileDoubleClick,
     onDownload: handleDownloadFile,
-    onDelete: (file: FtpEntry) => {
-      if (confirm(`Delete ${file.name}?`)) { deleteFile(file.path); setSelectedFiles(prev => prev.filter(f => f.path !== file.path)); }
-    },
+    onDelete: (file: FtpEntry) => setDeleteConfirm({ files: [file] }),
     onEdit: handleEditFile,
     onOpen: handleOpenFolder,
     onProperties: handleShowProperties,
@@ -438,7 +520,8 @@ const Index = () => {
     onCopy: (file: FtpEntry) => { setClipboard({ files: [file], operation: 'copy' }); toast({ title: `Copied ${file.name}` }); },
     onCut: (file: FtpEntry) => { setClipboard({ files: [file], operation: 'move' }); toast({ title: `Cut ${file.name}` }); },
     onPaste: handlePaste,
-    onSelectAll: () => setSelectedFiles(files),
+    onSelectAll: () => setSelectedFiles(prev => prev.length === files.length ? [] : files),
+    allSelected: selectedFiles.length > 0 && selectedFiles.length === files.length,
     selectedFiles,
     hasClipboard: !!clipboard,
     onDragStart: handleFileDragStart,
@@ -609,12 +692,15 @@ const Index = () => {
                     ref={searchInputRef}
                     type="text"
                     className="flex-1 bg-transparent text-sm outline-none placeholder:text-muted-foreground"
-                    placeholder="Search files and folders…"
+                    placeholder="Search files and folders in this directory and all subdirectories…"
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
                     onKeyDown={(e) => { if (e.key === 'Escape') { setSearchActive(false); setSearchQuery(''); } }}
                   />
-                  {searchQuery && (
+                  {isSearching && (
+                    <span className="text-xs text-muted-foreground shrink-0 animate-pulse">Searching…</span>
+                  )}
+                  {!isSearching && searchQuery && (
                     <span className="text-xs text-muted-foreground shrink-0">{displayedFiles.length} result{displayedFiles.length !== 1 ? 's' : ''}</span>
                   )}
                   <Button variant="ghost" size="icon" className="h-6 w-6 shrink-0" onClick={() => { setSearchActive(false); setSearchQuery(''); }}>
@@ -686,6 +772,55 @@ const Index = () => {
 
         {/* Keyboard Shortcuts Dialog */}
         <KeyboardShortcuts open={keyboardShortcutsOpen} onOpenChange={setKeyboardShortcutsOpen} />
+
+        <MobileWarningDialog
+          open={mobileWarningOpen}
+          onOpenChange={(open) => {
+            setMobileWarningOpen(open);
+            if (!open) sessionStorage.setItem('mobileWarningDismissed', 'true');
+          }}
+        />
+
+        {archiveViewer && session && (
+          <ArchiveBrowserDialog
+            open={!!archiveViewer}
+            onOpenChange={(open) => { if (!open) setArchiveViewer(null); }}
+            archivePath={archiveViewer.path}
+            archiveName={archiveViewer.name}
+            proxyUrl={settings.proxyUrl}
+            sessionId={session.id}
+          />
+        )}
+
+        {mediaViewer && (
+          <MediaViewerDialog
+            open={!!mediaViewer}
+            onOpenChange={(open) => { if (!open) { setMediaViewer(null); setMediaBlob(null); } }}
+            filename={mediaViewer.name}
+            blob={mediaBlob}
+            loading={mediaLoading}
+            onSaveEdited={isImageFile(mediaViewer.name) ? async (blob) => {
+              const file = new File([blob], mediaViewer.name, { type: blob.type });
+              await ftpRepository.upload(session!, mediaViewer.path, file);
+              refresh();
+            } : undefined}
+          />
+        )}
+
+        {/* Delete Confirmation */}
+        {deleteConfirm && (
+          <DeleteConfirmDialog
+            open={!!deleteConfirm}
+            onOpenChange={(open) => { if (!open) setDeleteConfirm(null); }}
+            itemName={deleteConfirm.files[0]?.name || ''}
+            itemCount={deleteConfirm.files.length}
+            onConfirm={() => {
+              deleteConfirm.files.forEach(f => deleteFile(f.path));
+              setSelectedFiles(prev => prev.filter(f => !deleteConfirm.files.some(d => d.path === f.path)));
+              setDeleteConfirm(null);
+            }}
+          />
+        )}
 
         {/* Connection Dialog */}
         <ConnectionDialog

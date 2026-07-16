@@ -23,6 +23,7 @@ interface FileContextMenuProps {
   onCut?: (file: FtpEntry) => void;
   onPaste?: () => void;
   onSelectAll?: () => void;
+  allSelected?: boolean;
   canEdit: boolean;
   hasClipboard?: boolean;
 }
@@ -30,7 +31,7 @@ interface FileContextMenuProps {
 export const FileContextMenu = ({
   file, children, onDownload, onDelete, onEdit, onOpen, onProperties,
   onRename, onDownloadFolder, onBookmark, onCopy, onCut, onPaste,
-  onSelectAll, canEdit, hasClipboard,
+  onSelectAll, allSelected, canEdit, hasClipboard,
 }: FileContextMenuProps) => {
   return (
     <ContextMenu>
@@ -108,7 +109,7 @@ export const FileContextMenu = ({
         {onSelectAll && (
           <ContextMenuItem onClick={onSelectAll} className="gap-2">
             <CheckSquare className="h-4 w-4" />
-            <span>Select All</span>
+            <span>{allSelected ? 'Deselect All' : 'Select All'}</span>
           </ContextMenuItem>
         )}
 

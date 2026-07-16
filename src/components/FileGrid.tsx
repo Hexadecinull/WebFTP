@@ -22,6 +22,7 @@ interface FileGridProps {
   onCut?: (file: FtpEntry) => void;
   onPaste?: () => void;
   onSelectAll?: () => void;
+  allSelected?: boolean;
   selectedFiles: FtpEntry[];
   hasClipboard?: boolean;
   onDragStart?: (e: React.DragEvent, file: FtpEntry) => void;
@@ -31,7 +32,7 @@ interface FileGridProps {
 export const FileGrid = ({
   files, onFileClick, onFileDoubleClick, onDownload, onDelete, onEdit,
   onOpen, onProperties, onRename, onDownloadFolder, onBookmark,
-  onCopy, onCut, onPaste, onSelectAll, selectedFiles, hasClipboard,
+  onCopy, onCut, onPaste, onSelectAll, allSelected, selectedFiles, hasClipboard,
   onDragStart, onDropOnFolder,
 }: FileGridProps) => {
   return (
@@ -53,6 +54,7 @@ export const FileGrid = ({
             onCut={onCut}
             onPaste={onPaste}
             onSelectAll={onSelectAll}
+            allSelected={allSelected}
             hasClipboard={hasClipboard}
             canEdit={!file.isDirectory && isEditableFile(file.name)}
           >

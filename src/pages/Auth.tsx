@@ -340,7 +340,7 @@ export default function Auth({ onClose }: { onClose?: () => void }) {
 
             {/* Sign In */}
             <TabsContent value="signin">
-              <form onSubmit={handleSignIn} className="flex flex-col gap-4 pt-4 min-h-[300px]">
+              <form onSubmit={handleSignIn} className="flex flex-col gap-4 pt-4 min-h-[460px]">
                 <div className="space-y-2">
                   <Label htmlFor="signin-email">Email</Label>
                   <Input
@@ -418,7 +418,7 @@ export default function Auth({ onClose }: { onClose?: () => void }) {
                   </p>
                 </div>
               ) : (
-                <form onSubmit={handleSignUp} className="flex flex-col gap-4 pt-4 min-h-[300px]">
+                <form onSubmit={handleSignUp} className="flex flex-col gap-4 pt-4 min-h-[460px]">
                   <div className="space-y-2">
                     <Label htmlFor="signup-email">Email</Label>
                     <Input
@@ -462,21 +462,19 @@ export default function Auth({ onClose }: { onClose?: () => void }) {
                         </button>
                       </div>
                     </div>
-                    {signupPassword && (
-                      <div className="space-y-1">
-                        <div className="flex gap-1 h-1">
-                          {[...Array(5)].map((_, i) => (
-                            <div
-                              key={i}
-                              className={`flex-1 rounded-full transition-all ${i < passwordStrength.strength ? passwordStrength.color : 'bg-muted'}`}
-                            />
-                          ))}
-                        </div>
-                        <p className={`text-xs ${passwordStrength.strength <= 2 ? 'text-destructive' : passwordStrength.strength === 3 ? 'text-warning' : 'text-success'}`}>
-                          Password strength: {passwordStrength.label}
-                        </p>
+                    <div className={`space-y-1 transition-opacity ${signupPassword ? 'opacity-100' : 'opacity-0'}`}>
+                      <div className="flex gap-1 h-1">
+                        {[...Array(5)].map((_, i) => (
+                          <div
+                            key={i}
+                            className={`flex-1 rounded-full transition-all ${i < passwordStrength.strength ? passwordStrength.color : 'bg-muted'}`}
+                          />
+                        ))}
                       </div>
-                    )}
+                      <p className={`text-xs ${passwordStrength.strength <= 2 ? 'text-destructive' : passwordStrength.strength === 3 ? 'text-warning' : 'text-success'}`}>
+                        Password strength: {passwordStrength.label || 'none'}
+                      </p>
+                    </div>
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="signup-confirm">Confirm Password</Label>

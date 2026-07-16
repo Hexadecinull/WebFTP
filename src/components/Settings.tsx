@@ -68,6 +68,7 @@ export const Settings = ({ onClose }: SettingsProps) => {
     return localStorage.getItem('useMaterialYou') !== 'false';
   });
   const [isClosing, setIsClosing] = useState(false);
+  const [activeSettingsTab, setActiveSettingsTab] = useState('appearance');
 
   // Aliases for readability
   const concurrentTransfers = settings.concurrentTransfers;
@@ -390,20 +391,18 @@ export const Settings = ({ onClose }: SettingsProps) => {
 
         {/* Content */}
         <ScrollArea className="flex-1 p-6">
-          <Tabs defaultValue="appearance" className="w-full max-w-3xl mx-auto">
+          <Tabs value={activeSettingsTab} onValueChange={(v) => {
+            if (v === 'professional' && !user) {
+              toast({ title: 'Sign in required', description: 'Create an account or sign in to access Professional features.' });
+              return;
+            }
+            setActiveSettingsTab(v);
+          }} className="w-full max-w-3xl mx-auto">
             <TabsList className="grid w-full grid-cols-5 bg-muted">
               <TabsTrigger value="appearance" className="transition-all data-[state=active]:bg-background">Appearance</TabsTrigger>
               <TabsTrigger value="connection" className="transition-all data-[state=active]:bg-background">Connection</TabsTrigger>
               <TabsTrigger value="advanced" className="transition-all data-[state=active]:bg-background">Advanced</TabsTrigger>
-              <TabsTrigger
-                value="professional"
-                className="transition-all data-[state=active]:bg-background"
-                onClick={() => {
-                  if (!user) {
-                    toast({ title: 'Sign in required', description: 'Create an account or sign in to access Professional features.' });
-                  }
-                }}
-              >
+              <TabsTrigger value="professional" className="transition-all data-[state=active]:bg-background">
                 <div className="flex items-center gap-1">
                   Professional
                   {!user && <Lock className="h-3 w-3" />}

@@ -20,7 +20,7 @@ export interface AppSettings {
 
 const DEFAULTS: AppSettings = {
   proxyUrl: '',
-  connectionTimeout: 30,
+  connectionTimeout: 300,
   keepAliveInterval: 60,
   concurrentTransfers: 3,
   autoRetry: true,
