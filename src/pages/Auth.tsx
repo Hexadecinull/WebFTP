@@ -50,12 +50,18 @@ export default function Auth({ onClose }: { onClose?: () => void }) {
   const [recoveryError, setRecoveryError] = useState('');
   // Animation
   const [isClosing, setIsClosing] = useState(false);
+  // MFA challenge (after sign-in, if 2FA is enabled)
+  const [showMfaChallenge, setShowMfaChallenge] = useState(false);
+  const [mfaCode, setMfaCode] = useState('');
+  const [mfaError, setMfaError] = useState('');
+  // Suspended account prompt
+  const [showSuspendedPrompt, setShowSuspendedPrompt] = useState(false);
 
   const { signIn, signUp, session, resetPassword, updatePassword, isPasswordRecovery,
-          signInWithGoogle, signInWithGitHub } = useAuth();
+          signInWithGoogle, signInWithGitHub, verifyMfaChallenge, reactivateAccount, signOut } = useAuth();
   const navigate = useNavigate();
 
-  if (session && !isPasswordRecovery) {
+  if (session && !isPasswordRecovery && !showMfaChallenge && !showSuspendedPrompt) {
     if (onClose) onClose();
     else navigate('/');
     return null;
@@ -88,16 +94,52 @@ export default function Auth({ onClose }: { onClose?: () => void }) {
       setIsLoading(false);
       return;
     }
-    const { error } = await signIn(email, password);
+    const { error, mfaRequired, suspended } = await signIn(email, password);
     if (error) {
       setSignInError('Incorrect email or password. Please try again.');
       const pwField = form.querySelector('#signin-password') as HTMLInputElement;
       if (pwField) pwField.value = '';
       setIsLoading(false);
+    } else if (mfaRequired) {
+      setShowMfaChallenge(true);
+      setIsLoading(false);
+    } else if (suspended) {
+      setShowSuspendedPrompt(true);
+      setIsLoading(false);
     } else {
       if (onClose) onClose();
       else navigate('/');
     }
+  };
+
+  const handleMfaVerify = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    setIsLoading(true);
+    setMfaError('');
+    const { error } = await verifyMfaChallenge(mfaCode);
+    if (error) {
+      setMfaError('Incorrect code. Please check your authenticator app and try again.');
+      setMfaCode('');
+      setIsLoading(false);
+    } else {
+      setShowMfaChallenge(false);
+      if (onClose) onClose();
+      else navigate('/');
+    }
+  };
+
+  const handleReactivate = async () => {
+    setIsLoading(true);
+    await reactivateAccount();
+    setShowSuspendedPrompt(false);
+    setIsLoading(false);
+    if (onClose) onClose();
+    else navigate('/');
+  };
+
+  const handleCancelReactivate = async () => {
+    await signOut();
+    setShowSuspendedPrompt(false);
   };
 
   const handleSignUp = async (e: React.FormEvent<HTMLFormElement>) => {
@@ -175,6 +217,87 @@ export default function Auth({ onClose }: { onClose?: () => void }) {
   // Shared card wrapper — full screen on mobile, max-w-md on desktop
   const cardClass = `w-full max-w-md relative ${isClosing ? 'animate-scale-out' : 'animate-scale-in'}`;
   const wrapClass = `flex items-center justify-center ${!onClose ? 'min-h-screen bg-gradient-to-br from-background via-accent/5 to-background' : ''} p-0 sm:p-4 ${isClosing ? 'animate-fade-out' : 'animate-fade-in'}`;
+
+  // MFA challenge screen (after password auth succeeds, if 2FA is enabled)
+  if (showMfaChallenge) {
+    return (
+      <div className={wrapClass}>
+        <Card className={cardClass}>
+          <CardHeader className="space-y-4 text-center">
+            <div className="flex justify-center">
+              <img src={logo} alt="WebFTP" className="h-16 w-16" />
+            </div>
+            <div>
+              <CardTitle className="text-2xl">Two-Factor Verification</CardTitle>
+              <CardDescription>Enter the 6-digit code from your authenticator app</CardDescription>
+            </div>
+          </CardHeader>
+          <CardContent>
+            <form onSubmit={handleMfaVerify} className="flex flex-col gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="mfa-code">Authentication Code</Label>
+                <Input
+                  id="mfa-code"
+                  inputMode="numeric"
+                  autoComplete="one-time-code"
+                  placeholder="000000"
+                  maxLength={6}
+                  value={mfaCode}
+                  onChange={(e) => setMfaCode(e.target.value.replace(/\D/g, ''))}
+                  disabled={isLoading}
+                  className="text-center text-lg tracking-[0.5em] font-mono"
+                  autoFocus
+                />
+                {mfaError && <p className="text-xs text-destructive animate-fade-in">{mfaError}</p>}
+              </div>
+              <Button type="submit" className="w-full" disabled={isLoading || mfaCode.length !== 6}>
+                {isLoading ? 'Verifying...' : 'Verify'}
+              </Button>
+            </form>
+          </CardContent>
+          <CardFooter className="flex flex-col gap-2 text-center">
+            <button
+              type="button"
+              onClick={async () => { await signOut(); setShowMfaChallenge(false); setMfaCode(''); }}
+              className="flex items-center gap-1 text-sm text-primary hover:underline mx-auto"
+            >
+              <ArrowLeft className="h-3 w-3" />
+              Back to Sign In
+            </button>
+          </CardFooter>
+        </Card>
+      </div>
+    );
+  }
+
+  // Suspended account screen
+  if (showSuspendedPrompt) {
+    return (
+      <div className={wrapClass}>
+        <Card className={cardClass}>
+          <CardHeader className="space-y-4 text-center">
+            <div className="flex justify-center">
+              <img src={logo} alt="WebFTP" className="h-16 w-16 opacity-50" />
+            </div>
+            <div>
+              <CardTitle className="text-2xl">Account Suspended</CardTitle>
+              <CardDescription>
+                You previously suspended this account. Reactivate it to continue.
+              </CardDescription>
+            </div>
+          </CardHeader>
+          <CardContent className="flex flex-col gap-3">
+            <Button onClick={handleReactivate} disabled={isLoading} className="w-full">
+              {isLoading ? 'Reactivating...' : 'Reactivate My Account'}
+            </Button>
+            <Button variant="outline" onClick={handleCancelReactivate} disabled={isLoading} className="w-full">
+              Cancel and Sign Out
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
 
   // Password recovery screen (after clicking reset link)
   if (isPasswordRecovery) {

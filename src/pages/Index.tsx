@@ -26,11 +26,13 @@ import { DeleteConfirmDialog } from '@/components/DeleteConfirmDialog';
 import { MobileWarningDialog } from '@/components/MobileWarningDialog';
 import { ArchiveBrowserDialog } from '@/components/ArchiveBrowserDialog';
 import { MediaViewerDialog } from '@/components/MediaViewerDialog';
+import { ConsolePanel } from '@/components/ConsolePanel';
+import { logEvent } from '@/lib/consoleLog';
 import { StatusBar } from '@/components/StatusBar';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
-import { RefreshCw, Upload, FolderPlus, FilePlus, Trash2, Settings as SettingsIcon, List, LayoutGrid, MoreHorizontal, Search, X, Keyboard } from 'lucide-react';
+import { RefreshCw, Upload, FolderPlus, FilePlus, Trash2, Settings as SettingsIcon, List, LayoutGrid, MoreHorizontal, Search, X, Keyboard, Terminal } from 'lucide-react';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { FtpEntry, ConnectOptions } from '@/types/ftp';
 import { isEditableFile, isArchiveFile, isMediaFile, isImageFile } from '@/lib/fileUtils';
@@ -128,6 +130,9 @@ const Index = () => {
   const [keyboardShortcutsOpen, setKeyboardShortcutsOpen] = useState(false);
   const [deleteConfirm, setDeleteConfirm] = useState<{ files: FtpEntry[] } | null>(null);
   const [mobileWarningOpen, setMobileWarningOpen] = useState(false);
+  const [consoleOpen, setConsoleOpen] = useState(true);
+  const [consoleDetached, setConsoleDetached] = useState(false);
+  const [splitRatio, setSplitRatio] = useState(0.5);
 
   useEffect(() => {
     if (isMobile && !sessionStorage.getItem('mobileWarningDismissed')) {
@@ -165,6 +170,7 @@ const Index = () => {
       inactivityTimerRef.current = setInterval(() => {
         if (Date.now() - lastActivityRef.current > 5 * 60 * 1000) {
           disconnect();
+          logEvent('warning', 'Disconnected automatically after 5 minutes of inactivity');
           toast({ title: 'Disconnected due to inactivity', description: 'You were inactive for 5 minutes.', variant: 'destructive' });
         }
       }, 30000);
@@ -184,24 +190,36 @@ const Index = () => {
   // Drag-and-drop file moving state
   const [draggedFile, setDraggedFile] = useState<FtpEntry | null>(null);
 
-  // Track navigation history when path changes
+  // Flag set right before a back/forward navigation so the tracking effect
+  // below knows NOT to push a new history entry — it's just moving the pointer.
+  const isHistoryNavRef = useRef(false);
+
+  // Track navigation history when path changes (only for genuinely new
+  // directory visits — back/forward navigation is excluded via the ref flag)
   useEffect(() => {
     if (!session) return;
+    localStorage.setItem(`lastPath_${session.host}_${session.protocol}`, currentPath);
+    setSelectedFiles([]);
+
+    if (isHistoryNavRef.current) {
+      isHistoryNavRef.current = false;
+      return;
+    }
+
     setNavHistory(prev => {
       const trimmed = prev.slice(0, navIndex + 1);
       if (trimmed[trimmed.length - 1] === currentPath) return prev;
-      return [...trimmed, currentPath];
+      const updated = [...trimmed, currentPath];
+      setNavIndex(updated.length - 1);
+      return updated;
     });
-    setNavIndex(prev => prev + 1);
-    setSelectedFiles([]);
-    // Persist last visited path so reconnecting to this host resumes here
-    localStorage.setItem(`lastPath_${session.host}_${session.protocol}`, currentPath);
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentPath]);
 
   const handleGoBack = useCallback(() => {
     if (!canGoBack) return;
     const newIndex = navIndex - 1;
+    isHistoryNavRef.current = true;
     setNavIndex(newIndex);
     navigateToPath(navHistory[newIndex]);
   }, [canGoBack, navIndex, navHistory, navigateToPath]);
@@ -209,6 +227,7 @@ const Index = () => {
   const handleGoForward = useCallback(() => {
     if (!canGoForward) return;
     const newIndex = navIndex + 1;
+    isHistoryNavRef.current = true;
     setNavIndex(newIndex);
     navigateToPath(navHistory[newIndex]);
   }, [canGoForward, navIndex, navHistory, navigateToPath]);
@@ -456,11 +475,31 @@ const Index = () => {
     try {
       await renameFile(draggedFile.path, newPath);
       toast({ title: 'Moved', description: `Moved ${draggedFile.name} to ${folder.name}/` });
+      refresh();
     } catch (error) {
       console.error('Move failed:', error);
     }
     setDraggedFile(null);
-  }, [draggedFile, renameFile]);
+  }, [draggedFile, renameFile, refresh]);
+
+  // Handles dropping a dragged file onto a breadcrumb path segment (moving
+  // it to that ancestor directory), matching Windows File Explorer behavior.
+  const handleDropOnPath = useCallback(async (e: React.DragEvent, targetPath: string) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (!draggedFile) return;
+    if (targetPath === currentPath) { setDraggedFile(null); return; }
+    const newPath = `${targetPath}/${draggedFile.name}`.replace('//', '/');
+    if (newPath === draggedFile.path) { setDraggedFile(null); return; }
+    try {
+      await renameFile(draggedFile.path, newPath);
+      toast({ title: 'Moved', description: `Moved ${draggedFile.name} to ${targetPath === '/' ? 'root' : targetPath}` });
+      refresh();
+    } catch (error) {
+      toast({ title: 'Move failed', description: error instanceof Error ? error.message : 'Unknown error', variant: 'destructive' });
+    }
+    setDraggedFile(null);
+  }, [draggedFile, currentPath, renameFile, refresh]);
 
   const handleBookmark = useCallback((file: FtpEntry) => {
     if (!session) return;
@@ -610,6 +649,12 @@ const Index = () => {
                     <Keyboard className="h-4 w-4" />
                   </Button>
 
+                  {!consoleOpen && !isMobile && (
+                    <Button variant="ghost" size="sm" onClick={() => setConsoleOpen(true)} title="Show Console">
+                      <Terminal className="h-4 w-4" />
+                    </Button>
+                  )}
+
                   {/* Desktop: show actions inline */}
                   {!isMobile && (
                     <>
@@ -681,6 +726,7 @@ const Index = () => {
                   canGoForward={canGoForward}
                   onGoBack={handleGoBack}
                   onGoForward={handleGoForward}
+                  onDropOnPath={handleDropOnPath}
                 />
               )}
 
@@ -755,16 +801,54 @@ const Index = () => {
               )}
             </div>
 
-            {/* Transfer Queue - responsive */}
+            {/* Transfer Queue + Console - responsive, resizable split.
+                ConsolePanel is rendered exactly once and stays mounted;
+                when its internal "detached" state flips, it switches to
+                position:fixed internally and visually pops out of this
+                docked slot on its own — no need to move it in the tree. */}
             {!isMobile && (
-              <div className="w-64 lg:w-80 border-l border-border bg-card shrink-0">
-                <TransferQueue
-                  transfers={transfers}
-                  onPause={pauseTransfer}
-                  onResume={resumeTransfer}
-                  onCancel={cancelTransfer}
-                  onClearCompleted={clearCompleted}
-                />
+              <div className="w-64 lg:w-80 border-l border-border bg-card shrink-0 flex flex-col overflow-hidden">
+                <div style={{ height: (session && consoleOpen && !consoleDetached) ? `${splitRatio * 100}%` : '100%' }} className="min-h-0 overflow-hidden">
+                  <TransferQueue
+                    transfers={transfers}
+                    onPause={pauseTransfer}
+                    onResume={resumeTransfer}
+                    onCancel={cancelTransfer}
+                    onClearCompleted={clearCompleted}
+                  />
+                </div>
+
+                {session && consoleOpen && (
+                  <>
+                    {!consoleDetached && (
+                      <div
+                        className="h-1.5 cursor-row-resize bg-border hover:bg-primary/50 transition-colors shrink-0"
+                        onPointerDown={(e) => {
+                          const startY = e.clientY;
+                          const startRatio = splitRatio;
+                          const containerHeight = e.currentTarget.parentElement?.clientHeight || 600;
+                          const onMove = (ev: PointerEvent) => {
+                            const dy = ev.clientY - startY;
+                            const newRatio = Math.min(0.85, Math.max(0.15, startRatio + dy / containerHeight));
+                            setSplitRatio(newRatio);
+                          };
+                          const onUp = () => {
+                            window.removeEventListener('pointermove', onMove);
+                            window.removeEventListener('pointerup', onUp);
+                          };
+                          window.addEventListener('pointermove', onMove);
+                          window.addEventListener('pointerup', onUp);
+                        }}
+                      />
+                    )}
+                    <div style={!consoleDetached ? { height: `${(1 - splitRatio) * 100}%` } : undefined} className={!consoleDetached ? 'min-h-0 overflow-hidden' : ''}>
+                      <ConsolePanel
+                        onClose={() => setConsoleOpen(false)}
+                        onDetachChange={setConsoleDetached}
+                      />
+                    </div>
+                  </>
+                )}
               </div>
             )}
           </div>

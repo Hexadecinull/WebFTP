@@ -673,6 +673,41 @@ app.post('/api/archive/create', async (req, res) => {
   }
 });
 
+// ─── Account Management (uses Supabase service role — server-side only) ────
+//
+// The service role key can perform admin operations (like deleting a user
+// from auth.users) that the browser's anon key cannot and must never be
+// able to. This key lives only in server/.env — never sent to the client.
+
+import { createClient as createSupabaseClient } from '@supabase/supabase-js';
+
+const supabaseAdmin = (process.env.SUPABASE_URL && process.env.SUPABASE_SERVICE_ROLE_KEY)
+  ? createSupabaseClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY)
+  : null;
+
+app.post('/api/account/delete', async (req, res) => {
+  if (!supabaseAdmin) {
+    return res.status(503).json({ message: 'Account deletion is not configured on this server (missing SUPABASE_SERVICE_ROLE_KEY)' });
+  }
+  const { accessToken } = req.body;
+  if (!accessToken) return res.status(400).json({ message: 'Missing access token' });
+
+  try {
+    // Verify the token belongs to a real, currently-authenticated user
+    const { data: userData, error: userError } = await supabaseAdmin.auth.getUser(accessToken);
+    if (userError || !userData?.user) {
+      return res.status(401).json({ message: 'Invalid or expired session' });
+    }
+
+    const { error: deleteError } = await supabaseAdmin.auth.admin.deleteUser(userData.user.id);
+    if (deleteError) throw deleteError;
+
+    res.json({ ok: true });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+});
+
 // ─── Health ───────────────────────────────────────────────────────────────────
 
 app.get('/api/health', (_req, res) => {

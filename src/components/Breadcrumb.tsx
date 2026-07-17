@@ -12,9 +12,11 @@ interface BreadcrumbProps {
   canGoForward: boolean;
   onGoBack: () => void;
   onGoForward: () => void;
+  onDropOnPath?: (e: React.DragEvent, path: string) => void;
 }
 
-export const Breadcrumb = ({ path, onNavigate, canGoBack, canGoForward, onGoBack, onGoForward }: BreadcrumbProps) => {
+export const Breadcrumb = ({ path, onNavigate, canGoBack, canGoForward, onGoBack, onGoForward, onDropOnPath }: BreadcrumbProps) => {
+  const [dragOverPath, setDragOverPath] = useState<string | null>(null);
   const [editing, setEditing] = useState(false);
   const [editValue, setEditValue] = useState(path);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -72,8 +74,11 @@ export const Breadcrumb = ({ path, onNavigate, canGoBack, canGoForward, onGoBack
       <Button
         variant="ghost"
         size="icon"
-        className="h-7 w-7 shrink-0"
+        className={`h-7 w-7 shrink-0 ${dragOverPath === '/' ? 'ring-2 ring-primary bg-primary/10' : ''}`}
         onClick={() => onNavigate('/')}
+        onDragOver={(e) => { if (onDropOnPath) { e.preventDefault(); e.dataTransfer.dropEffect = 'move'; setDragOverPath('/'); } }}
+        onDragLeave={() => setDragOverPath(null)}
+        onDrop={(e) => { setDragOverPath(null); onDropOnPath?.(e, '/'); }}
         title="Home"
       >
         <Home className="h-3.5 w-3.5" />
@@ -99,25 +104,34 @@ export const Breadcrumb = ({ path, onNavigate, canGoBack, canGoForward, onGoBack
           <Button
             variant="ghost"
             size="sm"
-            className="h-6 px-1.5 text-xs font-mono shrink-0"
+            className={`h-6 px-1.5 text-xs font-mono shrink-0 ${dragOverPath === '/' ? 'ring-2 ring-primary bg-primary/10' : ''}`}
             onClick={(e) => { e.stopPropagation(); onNavigate('/'); }}
+            onDragOver={(e) => { if (onDropOnPath) { e.preventDefault(); e.stopPropagation(); e.dataTransfer.dropEffect = 'move'; setDragOverPath('/'); } }}
+            onDragLeave={() => setDragOverPath(null)}
+            onDrop={(e) => { e.stopPropagation(); setDragOverPath(null); onDropOnPath?.(e, '/'); }}
           >
             /
           </Button>
-          {segments.map((segment, index) => (
-            <div key={index} className="flex items-center gap-0.5 min-w-0">
-              <ChevronRight className="h-3 w-3 text-muted-foreground shrink-0" />
-              <Button
-                variant="ghost"
-                size="sm"
-                className="h-6 px-1.5 text-xs font-mono max-w-[120px] truncate"
-                onClick={(e) => { e.stopPropagation(); onNavigate(buildPath(index)); }}
-                title={segment}
-              >
-                {segment}
-              </Button>
-            </div>
-          ))}
+          {segments.map((segment, index) => {
+            const segPath = buildPath(index);
+            return (
+              <div key={index} className="flex items-center gap-0.5 min-w-0">
+                <ChevronRight className="h-3 w-3 text-muted-foreground shrink-0" />
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className={`h-6 px-1.5 text-xs font-mono max-w-[120px] truncate ${dragOverPath === segPath ? 'ring-2 ring-primary bg-primary/10' : ''}`}
+                  onClick={(e) => { e.stopPropagation(); onNavigate(segPath); }}
+                  onDragOver={(e) => { if (onDropOnPath) { e.preventDefault(); e.stopPropagation(); e.dataTransfer.dropEffect = 'move'; setDragOverPath(segPath); } }}
+                  onDragLeave={() => setDragOverPath(null)}
+                  onDrop={(e) => { e.stopPropagation(); setDragOverPath(null); onDropOnPath?.(e, segPath); }}
+                  title={segment}
+                >
+                  {segment}
+                </Button>
+              </div>
+            );
+          })}
         </div>
       )}
     </div>
